@@ -61,36 +61,77 @@
     { id: "coucher", nom: "Coucher de soleil", c: ["#f97316", "#e11d48", "#a855f7"] },
     { id: "foret", nom: "Forêt", c: ["#16a34a", "#0d9488", "#65a30d"] },
     { id: "nuit", nom: "Minuit", c: ["#3730a3", "#475569", "#1e3a8a"] },
-    { id: "pastel", nom: "Pastel (clair)", c: ["#f9a8d4", "#a5b4fc", "#99f6e4"] },
+    { id: "pastel", nom: "Pastel", c: ["#f9a8d4", "#a5b4fc", "#99f6e4"] },
   ];
   const btn = document.getElementById("theme-btn");
   const menu = document.getElementById("theme-menu");
+  const modeBtn = document.getElementById("mode-btn");
+  const racine = document.documentElement;
 
   function appliquerTheme(id) {
     if (!THEMES.some((t) => t.id === id)) id = "aurore";
-    document.documentElement.dataset.theme = id;
+    racine.dataset.theme = id;
     UI.store.set("theme", id);
-    menu.querySelectorAll(".theme-opt").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.theme === id)));
+    menu.querySelectorAll(".theme-opt").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.choix === id)));
   }
-  menu.innerHTML = `<p>Thème de couleurs</p>` + THEMES.map((t) => `
-    <button class="theme-opt" role="radio" data-theme="${t.id}" aria-checked="false">
-      <span class="sw" style="background:conic-gradient(${t.c[0]},${t.c[1]},${t.c[2]},${t.c[0]})"></span>${t.nom}
-    </button>`).join("");
+
+  /* ---------- Mode clair / sombre / auto (suit l'appareil) ---------- */
+  const ICONES = {
+    light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>',
+  };
+  const mq = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
+  let prefMode = UI.store.get("mode", "auto");
+  const modeEffectif = () => (prefMode === "auto" ? (mq && mq.matches ? "light" : "dark") : prefMode);
+
+  function appliquerMode(pref, anime) {
+    prefMode = ["light", "dark", "auto"].includes(pref) ? pref : "auto";
+    UI.store.set("mode", prefMode);
+    if (anime) { racine.classList.add("mode-anim"); setTimeout(() => racine.classList.remove("mode-anim"), 450); }
+    const m = modeEffectif();
+    racine.dataset.mode = m;
+    // Le bouton montre le mode vers lequel il bascule.
+    const cible = m === "dark" ? "light" : "dark";
+    modeBtn.innerHTML = ICONES[cible];
+    const libelle = cible === "light" ? "Passer en mode clair" : "Passer en mode sombre";
+    modeBtn.title = libelle; modeBtn.setAttribute("aria-label", libelle);
+    menu.querySelectorAll(".mode-seg button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.choix === prefMode)));
+  }
+  modeBtn.onclick = () => appliquerMode(modeEffectif() === "dark" ? "light" : "dark", true);
+  if (mq) mq.addEventListener("change", () => { if (prefMode === "auto") appliquerMode("auto", true); });
+
+  menu.innerHTML = `
+    <p>Luminosité</p>
+    <div class="mode-seg" role="radiogroup" aria-label="Luminosité">
+      <button role="radio" data-choix="light" aria-checked="false">Clair</button>
+      <button role="radio" data-choix="dark" aria-checked="false">Sombre</button>
+      <button role="radio" data-choix="auto" aria-checked="false" title="Suit le réglage de ton appareil">Auto</button>
+    </div>
+    <hr>
+    <p>Thème de couleurs</p>
+    <div role="radiogroup" aria-label="Thème de couleurs" class="theme-list">` + THEMES.map((t) => `
+      <button class="theme-opt" role="radio" data-choix="${t.id}" aria-checked="false">
+        <span class="sw" style="background:conic-gradient(${t.c[0]},${t.c[1]},${t.c[2]},${t.c[0]})"></span>${t.nom}
+      </button>`).join("") + `</div>`;
   const ouvrir = (o) => { menu.hidden = !o; btn.setAttribute("aria-expanded", String(o)); };
-  btn.onclick = (e) => { e.stopPropagation(); ouvrir(menu.hidden); if (!menu.hidden) menu.querySelector('[aria-checked="true"]')?.focus(); };
-  menu.onclick = (e) => { const o = e.target.closest(".theme-opt"); if (o) appliquerTheme(o.dataset.theme); };
+  btn.onclick = (e) => { e.stopPropagation(); ouvrir(menu.hidden); if (!menu.hidden) menu.querySelector('.theme-opt[aria-checked="true"]')?.focus(); };
+  menu.onclick = (e) => {
+    const o = e.target.closest(".theme-opt"); if (o) appliquerTheme(o.dataset.choix);
+    const m = e.target.closest(".mode-seg button"); if (m) appliquerMode(m.dataset.choix, true);
+  };
   menu.onkeydown = (e) => {
     const opts = [...menu.querySelectorAll(".theme-opt")];
     const i = opts.indexOf(document.activeElement);
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
       const n = opts[(i + (e.key === "ArrowDown" ? 1 : opts.length - 1)) % opts.length];
-      n.focus(); appliquerTheme(n.dataset.theme);
+      n.focus(); appliquerTheme(n.dataset.choix);
     }
     if (e.key === "Escape") { ouvrir(false); btn.focus(); }
   };
   document.addEventListener("click", (e) => { if (!menu.hidden && !e.target.closest(".theme-picker")) ouvrir(false); });
-  appliquerTheme(document.documentElement.dataset.theme);
+  appliquerTheme(racine.dataset.theme);
+  appliquerMode(prefMode, false);
 
   window.addEventListener("hashchange", () => { ouvrir(false); naviguer(); });
   naviguer();

@@ -7,9 +7,14 @@
   <meta name="description" content="Tests d'intérêts et de personnalité, parcours, préalables, calculateur de cote R et comparateur d'universités pour les élèves du secondaire et du cégep au Québec.">
   <link rel="stylesheet" href="css/style.css">
   <script>
-    /* Applique le thème enregistré avant l'affichage pour éviter un flash. */
-    try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem("capetudes:theme")) || "aurore"; }
-    catch (e) { document.documentElement.dataset.theme = "aurore"; }
+    /* Applique le thème et le mode enregistrés avant l'affichage pour éviter un flash. */
+    (function () {
+      var lire = function (k, d) { try { return JSON.parse(localStorage.getItem("capetudes:" + k)) || d; } catch (e) { return d; } };
+      var pref = lire("mode", "auto");
+      var sombre = pref === "dark" || (pref === "auto" && !(window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches));
+      document.documentElement.dataset.theme = lire("theme", "aurore");
+      document.documentElement.dataset.mode = sombre ? "dark" : "light";
+    })();
   </script>
 </head>
 <body>
@@ -22,11 +27,12 @@
         <a href="#/secondaire" data-nav="secondaire">Je suis au secondaire</a>
         <a href="#/cegep" data-nav="cegep">Je suis au cégep</a>
       </nav>
+      <button class="mode-btn" id="mode-btn" type="button"></button>
       <div class="theme-picker">
-        <button class="theme-btn" id="theme-btn" aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu" title="Changer le thème">
-          <span class="sw" aria-hidden="true"></span><span class="sr">Thème</span>
+        <button class="theme-btn" id="theme-btn" aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu" title="Thème et luminosité">
+          <span class="sw" aria-hidden="true"></span><span class="sr">Thème et luminosité</span>
         </button>
-        <div class="theme-menu" id="theme-menu" role="radiogroup" aria-label="Thème de couleurs" hidden></div>
+        <div class="theme-menu" id="theme-menu" aria-label="Thème et luminosité" hidden></div>
       </div>
     </div>
   </header>

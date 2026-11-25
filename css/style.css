@@ -1,56 +1,14 @@
 /* =========================================================================
-   Cap Études — glassmorphisme à thèmes
-   Chaque thème définit un fond (couleur + trois halos) et ses accents ;
-   toutes les surfaces sont des panneaux de verre translucides et floutés.
+   Cap Études — glassmorphisme à thèmes, en mode clair ou sombre
+   <html data-theme="…" data-mode="dark|light">
+   - data-theme choisit la palette (halos et accents) ;
+   - data-mode choisit la luminosité ; chaque thème a ses deux versions.
    ========================================================================= */
 
-/* ---------- Thèmes ---------- */
+/* ---------- Jetons communs : mode sombre ---------- */
 :root,
-[data-theme="aurore"] {
-  --bg: #0b1026;
-  --blob1: #7c3aed; --blob2: #06b6d4; --blob3: #ec4899;
-  --brand: #a78bfa; --brand-2: #22d3ee;
-  --sec: #2dd4bf; --ceg: #f472b6;
+[data-mode="dark"] {
   color-scheme: dark;
-}
-[data-theme="ocean"] {
-  --bg: #031a26;
-  --blob1: #0284c7; --blob2: #14b8a6; --blob3: #4f46e5;
-  --brand: #38bdf8; --brand-2: #2dd4bf;
-  --sec: #5eead4; --ceg: #818cf8;
-  color-scheme: dark;
-}
-[data-theme="coucher"] {
-  --bg: #24091a;
-  --blob1: #f97316; --blob2: #e11d48; --blob3: #a855f7;
-  --brand: #fb923c; --brand-2: #f472b6;
-  --sec: #fbbf24; --ceg: #fb7185;
-  color-scheme: dark;
-}
-[data-theme="foret"] {
-  --bg: #04170f;
-  --blob1: #16a34a; --blob2: #0d9488; --blob3: #65a30d;
-  --brand: #4ade80; --brand-2: #a3e635;
-  --sec: #5eead4; --ceg: #bef264;
-  color-scheme: dark;
-}
-[data-theme="nuit"] {
-  --bg: #050507;
-  --blob1: #3730a3; --blob2: #475569; --blob3: #1e3a8a;
-  --brand: #c7d2fe; --brand-2: #93c5fd;
-  --sec: #a5b4fc; --ceg: #cbd5e1;
-  color-scheme: dark;
-}
-[data-theme="pastel"] {
-  --bg: #eef0fb;
-  --blob1: #f9a8d4; --blob2: #a5b4fc; --blob3: #99f6e4;
-  --brand: #6d28d9; --brand-2: #db2777;
-  --sec: #0f766e; --ceg: #be185d;
-  color-scheme: light;
-}
-
-/* Jetons dérivés : thèmes sombres (par défaut) */
-:root {
   --ink: #f4f6ff;
   --muted: rgba(230, 235, 255, .68);
   --glass: rgba(255, 255, 255, .075);
@@ -62,35 +20,64 @@
   --field: rgba(255, 255, 255, .07);
   --shadow: 0 10px 40px rgba(0, 0, 0, .35);
   --brand-ink: #0b0d18;
-  --brand-soft: color-mix(in srgb, var(--brand) 18%, transparent);
   --ok: #6ee7a8;   --ok-bg: rgba(52, 211, 153, .16);
   --mid: #fcd34d;  --mid-bg: rgba(251, 191, 36, .16);
   --ko: #fca5a5;   --ko-bg: rgba(248, 113, 113, .16);
   --info: #a5c8ff; --info-bg: rgba(96, 165, 250, .16);
-  --blur: 18px;
-  --radius: 18px;
   --blob-opacity: .55;
-  font-size: 16px;
 }
-/* Jetons dérivés : thème clair */
-[data-theme="pastel"] {
-  --ink: #1d1838;
-  --muted: rgba(40, 34, 80, .66);
-  --glass: rgba(255, 255, 255, .45);
-  --glass-strong: rgba(255, 255, 255, .62);
-  --glass-hover: rgba(255, 255, 255, .7);
-  --glass-border: rgba(255, 255, 255, .75);
-  --glass-highlight: rgba(255, 255, 255, .9);
-  --line: rgba(60, 50, 120, .12);
-  --field: rgba(255, 255, 255, .6);
-  --shadow: 0 10px 40px rgba(80, 70, 160, .14);
+/* ---------- Jetons communs : mode clair ---------- */
+[data-mode="light"] {
+  color-scheme: light;
+  --ink: #1b1a33;
+  --muted: rgba(35, 33, 70, .68);
+  --glass: rgba(255, 255, 255, .5);
+  --glass-strong: rgba(255, 255, 255, .66);
+  --glass-hover: rgba(255, 255, 255, .74);
+  --glass-border: rgba(255, 255, 255, .8);
+  --glass-highlight: rgba(255, 255, 255, .95);
+  --line: rgba(40, 40, 90, .12);
+  --field: rgba(255, 255, 255, .65);
+  --shadow: 0 10px 36px rgba(60, 60, 130, .13);
   --brand-ink: #ffffff;
   --ok: #047857;   --ok-bg: rgba(16, 185, 129, .16);
   --mid: #92400e;  --mid-bg: rgba(245, 158, 11, .2);
   --ko: #b91c1c;   --ko-bg: rgba(239, 68, 68, .14);
   --info: #1e40af; --info-bg: rgba(59, 130, 246, .14);
-  --blob-opacity: .7;
+  --blob-opacity: .38;
 }
+:root {
+  --brand-soft: color-mix(in srgb, var(--brand) 18%, transparent);
+  --blur: 18px;
+  --radius: 18px;
+  font-size: 16px;
+}
+
+/* ---------- Thèmes : halos (identiques dans les deux modes) ---------- */
+:root, [data-theme="aurore"] { --blob1: #7c3aed; --blob2: #06b6d4; --blob3: #ec4899; }
+[data-theme="ocean"]   { --blob1: #0284c7; --blob2: #14b8a6; --blob3: #4f46e5; }
+[data-theme="coucher"] { --blob1: #f97316; --blob2: #e11d48; --blob3: #a855f7; }
+[data-theme="foret"]   { --blob1: #16a34a; --blob2: #0d9488; --blob3: #65a30d; }
+[data-theme="nuit"]    { --blob1: #3730a3; --blob2: #475569; --blob3: #1e3a8a; }
+[data-theme="pastel"]  { --blob1: #f9a8d4; --blob2: #a5b4fc; --blob3: #99f6e4; }
+
+/* ---------- Thèmes : fond et accents, version sombre ---------- */
+:root,
+[data-theme="aurore"][data-mode="dark"]  { --bg: #0b1026; --brand: #a78bfa; --brand-2: #22d3ee; --sec: #2dd4bf; --ceg: #f472b6; }
+[data-theme="ocean"][data-mode="dark"]   { --bg: #031a26; --brand: #38bdf8; --brand-2: #2dd4bf; --sec: #5eead4; --ceg: #818cf8; }
+[data-theme="coucher"][data-mode="dark"] { --bg: #24091a; --brand: #fb923c; --brand-2: #f472b6; --sec: #fbbf24; --ceg: #fb7185; }
+[data-theme="foret"][data-mode="dark"]   { --bg: #04170f; --brand: #4ade80; --brand-2: #a3e635; --sec: #5eead4; --ceg: #bef264; }
+[data-theme="nuit"][data-mode="dark"]    { --bg: #050507; --brand: #c7d2fe; --brand-2: #93c5fd; --sec: #a5b4fc; --ceg: #cbd5e1; }
+[data-theme="pastel"][data-mode="dark"]  { --bg: #1a1628; --brand: #f0abfc; --brand-2: #a5b4fc; --sec: #99f6e4; --ceg: #f9a8d4; --blob-opacity: .4; }
+
+/* ---------- Thèmes : fond et accents, version claire ----------
+   Accents plus foncés pour garder un bon contraste sur le verre clair. */
+[data-theme="aurore"][data-mode="light"]  { --bg: #f3f0ff; --brand: #6d28d9; --brand-2: #0e7490; --sec: #0f766e; --ceg: #be185d; }
+[data-theme="ocean"][data-mode="light"]   { --bg: #eaf6fb; --brand: #0369a1; --brand-2: #0f766e; --sec: #0f766e; --ceg: #4338ca; }
+[data-theme="coucher"][data-mode="light"] { --bg: #fff3ea; --brand: #c2410c; --brand-2: #be185d; --sec: #b45309; --ceg: #be123c; }
+[data-theme="foret"][data-mode="light"]   { --bg: #eef8f0; --brand: #15803d; --brand-2: #4d7c0f; --sec: #0f766e; --ceg: #3f6212; }
+[data-theme="nuit"][data-mode="light"]    { --bg: #eef0f6; --brand: #3730a3; --brand-2: #1d4ed8; --sec: #4338ca; --ceg: #334155; --blob-opacity: .28; }
+[data-theme="pastel"][data-mode="light"]  { --bg: #eef0fb; --brand: #6d28d9; --brand-2: #db2777; --sec: #0f766e; --ceg: #be185d; --blob-opacity: .7; }
 
 /* ---------- Base ---------- */
 * { box-sizing: border-box; }
@@ -456,7 +443,7 @@ details summary { cursor: pointer; font-weight: 600; margin-top: .75rem; }
 /* Navigateurs sans backdrop-filter : verre plus opaque pour rester lisible. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root { --glass: rgba(20, 24, 40, .88); --glass-strong: rgba(30, 34, 52, .95); }
-  [data-theme="pastel"] { --glass: rgba(255, 255, 255, .9); --glass-strong: rgba(255, 255, 255, .96); }
+  [data-mode="light"] { --glass: rgba(255, 255, 255, .9); --glass-strong: rgba(255, 255, 255, .96); }
 }
 
 @media (max-width: 680px) {
@@ -472,3 +459,20 @@ details summary { cursor: pointer; font-weight: 600; margin-top: .75rem; }
   .footer { margin: 0 .5rem 1rem; }
   .blob { filter: blur(70px); }
 }
+
+/* ---------- Bouton et choix clair / sombre ---------- */
+.mode-btn {
+  display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; cursor: pointer; padding: 0;
+  border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--ink); font-size: 1.05rem;
+  transition: background .2s, transform .3s;
+}
+.mode-btn:hover { background: var(--glass-hover); transform: rotate(-15deg); }
+.mode-btn svg { width: 1.15rem; height: 1.15rem; }
+.mode-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: .2rem; padding: .2rem; margin: 0 0 .4rem; border-radius: 12px; background: var(--field); border: 1px solid var(--glass-border); }
+.mode-seg button { border: 0; background: none; color: var(--ink); font: inherit; font-size: .85rem; padding: .4rem .3rem; border-radius: 9px; cursor: pointer; }
+.mode-seg button[aria-checked="true"] { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: var(--brand-ink); font-weight: 650; }
+.theme-menu hr { border: 0; border-top: 1px solid var(--line); margin: .3rem 0; width: 100%; }
+/* Transition douce entre les modes (désactivée si l'appareil demande moins d'animations). */
+html.mode-anim, html.mode-anim * { transition: background-color .35s, color .25s, border-color .35s !important; }
+@media (prefers-reduced-motion: reduce) { html.mode-anim, html.mode-anim * { transition: none !important; } }
+.theme-list { display: grid; gap: .25rem; }
