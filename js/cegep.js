@@ -346,7 +346,9 @@
         ecart: (x, y) => (x.ecart ?? 99) - (y.ecart ?? 99),
         statut: (x, y) => x.st.k - y.st.k,
       }[f.tri];
-      out.sort((x, y) => f.sens * cmp(x, y) || x.b.nom.localeCompare(y.b.nom, "fr"));
+      // Les programmes sans cote publiée restent en bas, quel que soit le sens du tri par cote ou par écart.
+      const sansCote = (r) => (f.tri === "cote" || f.tri === "ecart") && r.o.cote == null;
+      out.sort((x, y) => (sansCote(x) - sansCote(y)) || f.sens * cmp(x, y) || x.b.nom.localeCompare(y.b.nom, "fr"));
       return out;
     }
 

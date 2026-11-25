@@ -54,6 +54,44 @@
     document.title = (h1 && chemin !== "/" ? h1.textContent.trim() + " · " : "") + "Cap Études";
   }
 
-  window.addEventListener("hashchange", naviguer);
+  /* ---------- Thèmes ---------- */
+  const THEMES = [
+    { id: "aurore", nom: "Aurore", c: ["#7c3aed", "#06b6d4", "#ec4899"] },
+    { id: "ocean", nom: "Océan", c: ["#0284c7", "#14b8a6", "#4f46e5"] },
+    { id: "coucher", nom: "Coucher de soleil", c: ["#f97316", "#e11d48", "#a855f7"] },
+    { id: "foret", nom: "Forêt", c: ["#16a34a", "#0d9488", "#65a30d"] },
+    { id: "nuit", nom: "Minuit", c: ["#3730a3", "#475569", "#1e3a8a"] },
+    { id: "pastel", nom: "Pastel (clair)", c: ["#f9a8d4", "#a5b4fc", "#99f6e4"] },
+  ];
+  const btn = document.getElementById("theme-btn");
+  const menu = document.getElementById("theme-menu");
+
+  function appliquerTheme(id) {
+    if (!THEMES.some((t) => t.id === id)) id = "aurore";
+    document.documentElement.dataset.theme = id;
+    UI.store.set("theme", id);
+    menu.querySelectorAll(".theme-opt").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.theme === id)));
+  }
+  menu.innerHTML = `<p>Thème de couleurs</p>` + THEMES.map((t) => `
+    <button class="theme-opt" role="radio" data-theme="${t.id}" aria-checked="false">
+      <span class="sw" style="background:conic-gradient(${t.c[0]},${t.c[1]},${t.c[2]},${t.c[0]})"></span>${t.nom}
+    </button>`).join("");
+  const ouvrir = (o) => { menu.hidden = !o; btn.setAttribute("aria-expanded", String(o)); };
+  btn.onclick = (e) => { e.stopPropagation(); ouvrir(menu.hidden); if (!menu.hidden) menu.querySelector('[aria-checked="true"]')?.focus(); };
+  menu.onclick = (e) => { const o = e.target.closest(".theme-opt"); if (o) appliquerTheme(o.dataset.theme); };
+  menu.onkeydown = (e) => {
+    const opts = [...menu.querySelectorAll(".theme-opt")];
+    const i = opts.indexOf(document.activeElement);
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const n = opts[(i + (e.key === "ArrowDown" ? 1 : opts.length - 1)) % opts.length];
+      n.focus(); appliquerTheme(n.dataset.theme);
+    }
+    if (e.key === "Escape") { ouvrir(false); btn.focus(); }
+  };
+  document.addEventListener("click", (e) => { if (!menu.hidden && !e.target.closest(".theme-picker")) ouvrir(false); });
+  appliquerTheme(document.documentElement.dataset.theme);
+
+  window.addEventListener("hashchange", () => { ouvrir(false); naviguer(); });
   naviguer();
 })();

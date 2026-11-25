@@ -6,14 +6,29 @@
   <title>Cap Études : choisir son programme au cégep et à l'université</title>
   <meta name="description" content="Tests d'intérêts et de personnalité, parcours, préalables, calculateur de cote R et comparateur d'universités pour les élèves du secondaire et du cégep au Québec.">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    /* Applique le thème enregistré avant l'affichage pour éviter un flash. */
+    try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem("capetudes:theme")) || "aurore"; }
+    catch (e) { document.documentElement.dataset.theme = "aurore"; }
+  </script>
 </head>
 <body>
+  <div class="bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+
   <header class="topbar">
     <a class="logo" href="#/">Cap<span>Études</span></a>
-    <nav class="topnav" aria-label="Navigation principale">
-      <a href="#/secondaire" data-nav="secondaire">Je suis au secondaire</a>
-      <a href="#/cegep" data-nav="cegep">Je suis au cégep</a>
-    </nav>
+    <div class="topright">
+      <nav class="topnav" aria-label="Navigation principale">
+        <a href="#/secondaire" data-nav="secondaire">Je suis au secondaire</a>
+        <a href="#/cegep" data-nav="cegep">Je suis au cégep</a>
+      </nav>
+      <div class="theme-picker">
+        <button class="theme-btn" id="theme-btn" aria-haspopup="true" aria-expanded="false" aria-controls="theme-menu" title="Changer le thème">
+          <span class="sw" aria-hidden="true"></span><span class="sr">Thème</span>
+        </button>
+        <div class="theme-menu" id="theme-menu" role="radiogroup" aria-label="Thème de couleurs" hidden></div>
+      </div>
+    </div>
   </header>
 
   <main id="app" tabindex="-1"></main>
