@@ -17,6 +17,7 @@
         ${carte("#/secondaire/parcours", "🗺️", "Parcours possibles", "Préuniversitaire, technique, DEC-BAC, DEP, Tremplin DEC : vois tous les chemins.")}
         ${carte("#/secondaire/prealables", "✅", "Préalables par cégep", "Les cours du secondaire exigés pour chaque programme, dans chaque cégep.")}
         ${carte("#/budget", "💰", "Étudier au cégep loin de chez toi", "Logement, épicerie, retours à la maison : estime ton budget pour une année.")}
+        ${carte("#/demarches?niveau=secondaire", "📅", "Dates et démarches", "Quand faire ta demande au cégep, les tours d'admission et les documents à fournir.")}
         ${carte("#/recherche?type=cegep", "🔎", "Trouver un cégep", "Cherche un cégep par ville, région ou programme.")}
       </div>`,
     });

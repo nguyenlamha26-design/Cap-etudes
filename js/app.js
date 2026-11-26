@@ -24,6 +24,8 @@
       </div>
       <h2 class="section-titre">Pour tout le monde</h2>
       <div class="cards">
+        <a class="card" href="#/demarches"><span class="card-ico" aria-hidden="true">📅</span><h2>Dates et démarches</h2>
+          <p>Le calendrier d'admission de cette année, la prochaine date à ne pas manquer et ta liste de documents.</p></a>
         <a class="card" href="#/budget"><span class="card-ico" aria-hidden="true">💰</span><h2>Budget loin de chez soi</h2>
           <p>Loyer, épicerie, retours à la maison, frais de scolarité : combien coûte une année d'études dans une autre ville ?</p></a>
         <a class="card" href="#/recherche"><span class="card-ico" aria-hidden="true">🔎</span><h2>Écoles, bourses et aides</h2>
@@ -48,6 +50,7 @@
     "/cegep/classement": CEGEP.classement,
     "/budget": BUDGET.budget,
     "/recherche": RECHERCHE.recherche,
+    "/demarches": DEMARCHES.demarches,
     "/compte": COMPTE.vue,
   };
 

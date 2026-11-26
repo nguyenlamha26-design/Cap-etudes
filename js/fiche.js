@@ -50,6 +50,24 @@
       .map((a) => `<li><a href="${a.lien}" target="_blank" rel="noopener">${esc(a.nom)}</a> <span class="muted">· ${esc(a.montant)}</span></li>`).join("")}</ul>`;
   }
 
+  /* Admission, résidences, stages, échanges et droits de scolarité. */
+  function plusUni(u) {
+    const p = (CE.UNI_PLUS || {})[u.id];
+    if (!p) return "";
+    const d = CE.DROITS;
+    return `
+      <section class="fiche-sec fiche">
+        <div><h4>📅 Admission</h4><p class="small"><b>Date limite :</b> ${esc(p.dateLimite)}</p>
+          <a class="small" href="${p.lienAdmission}" target="_blank" rel="noopener">Dates officielles →</a></div>
+        <div><h4>🏠 Résidences</h4>${p.residence ? `<p class="small">${esc(p.residence.reservation)}</p>
+          <a class="small" href="${p.residence.lien}" target="_blank" rel="noopener">Site des résidences →</a>` : '<p class="small muted">Aucune (études à distance).</p>'}</div>
+        <div><h4>💼 Stages et coop</h4><p class="small">${esc(p.coop)}</p></div>
+        <div><h4>✈️ Échanges</h4><p class="small">${esc(p.echanges)}</p></div>
+        <div><h4>🧾 Droits de scolarité ${esc(d.annee)}</h4><p class="small">${fmt(d.parCredit, 2)} $ par crédit (tarif de base des résidents du Québec) + frais afférents : environ 1 700 $ à 2 100 $ par session à temps plein.</p>
+          <a class="small" href="${d.lien}" target="_blank" rel="noopener">Source →</a></div>
+      </section>`;
+  }
+
   /* Contenu de la fiche d'une université (utilisé dans la fenêtre et dans le classement). */
   function html(u, f) {
     f = f || CE.FICHES[u.id] || {};
@@ -63,6 +81,7 @@
         ${vieHtml(CE.VIE_SOCIALE[u.id])}
         ${f.vie ? `<p class="small muted">${esc(f.vie)}</p>` : ""}
       </section>
+      ${plusUni(u)}
       ${f.taille ? `<section class="fiche-sec fiche">
         <div><h4>En bref</h4><p class="small">${esc(f.taille)}</p><p class="small"><b>Campus :</b> ${f.campus.map(esc).join(" · ")}</p></div>
         <div><h4>Points forts</h4><div class="tags">${f.forces.map((x) => `<span class="tag">${esc(x)}</span>`).join("")}</div></div>
@@ -89,7 +108,8 @@
 
   function contenuCegep(c) {
     const progs = CE.DEC.filter((p) => cegepsDe(p).some((x) => x.id === c.id));
-    const v = CE.VIE_CEGEP;
+    const pl = (CE.CEGEP_PLUS || {})[c.id] || {};
+    const v = Object.assign({}, CE.VIE_CEGEP, pl.equipe ? { equipe: `${pl.equipe} (ligues du RSEQ : soccer, basketball, volleyball, football ou hockey selon le cégep)` } : {});
     const ville = c.ville.split(",")[0];
     return {
       titre: c.nom,
@@ -97,13 +117,15 @@
       corps: `
         <section class="fiche-sec"><h4>💰 Bourses et aides au cégep</h4>
           <ul class="small">${v.bourses.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-          <p class="small muted">Les montants sont publiés par la Fondation du cégep : cherche « Fondation » sur le site de l'établissement.</p>
+          <p class="small muted">Les montants sont publiés par la Fondation du cégep${pl.site ? ` : <a href="${pl.site}" target="_blank" rel="noopener">site du cégep</a>` : ""}.</p>
+          <p class="small">Le cégep public est gratuit : seuls des frais d'inscription et afférents (quelques centaines de dollars par session) sont exigés.</p>
           <h5>Aides valables partout</h5>${aidesGenerales("cegep")}</section>
         <section class="fiche-sec"><h4>🎉 Vie sociale et activités</h4>${vieHtml(v)}
-          <p class="small muted">Activités offertes dans la plupart des cégeps ; l'offre exacte varie d'un établissement à l'autre.</p></section>
+          <p class="small muted">${pl.equipe ? "Nom d'équipe selon les ligues du RSEQ. " : ""}Clubs et événements offerts dans la plupart des cégeps ; l'offre exacte varie d'un établissement à l'autre.</p></section>
         <section class="fiche-sec"><h4>Programmes répertoriés</h4>
           <div class="tags">${progs.map((p) => `<a class="tag" href="#/secondaire/prealables?prog=${encodeURIComponent(p.code)}">${esc(p.nom)}</a>`).join("")}</div></section>`,
-      actions: `<a class="btn small" href="#/secondaire/prealables?mode=cegep&cegep=${c.id}">Programmes et préalables</a>
+      actions: `${pl.site ? `<a class="btn small" href="${pl.site}" target="_blank" rel="noopener">Site du cégep</a>` : ""}
+        <a class="btn ghost small" href="#/secondaire/prealables?mode=cegep&cegep=${c.id}">Programmes et préalables</a>
         <a class="btn ghost small" href="#/budget?ville=${encodeURIComponent(ville)}">Mon budget à ${esc(ville)}</a>`,
     };
   }

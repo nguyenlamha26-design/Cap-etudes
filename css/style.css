@@ -592,3 +592,21 @@ a.tag:hover { filter: brightness(1.15); }
 .vie-equipe { margin: .2rem 0 .4rem; }
 .vie-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .3rem 1rem; }
 .maj { border-top: 1px solid var(--line); padding-top: .7rem; }
+
+/* ---------- Dates et démarches ---------- */
+.prochain { border-left: 4px solid var(--brand); }
+.prochain h2 { margin: .2rem 0; }
+.timeline, .etapes { list-style: none; padding: 0; margin: .5rem 0 1.2rem; display: grid; gap: .55rem; }
+.timeline li { position: relative; padding: .75rem 1rem .75rem 1.4rem; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border);
+  display: grid; grid-template-columns: 1fr auto; gap: .15rem .8rem; align-items: baseline; }
+.timeline li::before { content: ""; position: absolute; left: .55rem; top: .95rem; width: .5rem; height: .5rem; border-radius: 50%; background: var(--muted); }
+.timeline li > p, .timeline li > a, .timeline .tl-date { grid-column: 1 / -1; margin: 0; }
+.timeline .tl-date { font-size: .8rem; color: var(--muted); font-weight: 650; }
+.timeline .tl-important::before { background: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+.timeline .tl-encours::before { background: var(--ok); }
+.timeline .tl-passe { opacity: .55; }
+.etapes { counter-reset: e; }
+.etapes li { counter-increment: e; padding: .7rem 1rem .7rem 3rem; position: relative; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border); }
+.etapes li::before { content: counter(e); position: absolute; left: .8rem; top: .7rem; width: 1.6rem; height: 1.6rem; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: .85rem; background: var(--brand); color: var(--brand-ink); }
+.etapes p { margin: .2rem 0; }
