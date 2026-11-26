@@ -23,6 +23,7 @@
         ${carte("#/cegep/admissibilite", "📊", "Avec ma cote R, où puis-je aller ?", "Tableau qui se met à jour selon ta cote R : programmes et universités à ta portée.")}
         ${carte("#/cegep/classement", "🏆", "Classement des universités", "Classe les universités selon 12 critères : bourses, stages, coût de la vie, distance de chez toi, résidences…")}
         ${carte("#/budget", "💰", "Budget pour étudier loin", "Combien coûte une année d'université dans une autre ville, et comment la financer.")}
+        ${carte("#/vie?niveau=uni", "🗓️", "Une semaine à l'université", "Horaire type selon le programme et simulation d'une session : examens, emploi, budget.")}
         ${carte("#/demarches?niveau=cegep", "📅", "Dates et démarches", "Dates limites d'admission, bourses et résidences, avec la prochaine étape à ne pas manquer.")}
         ${carte("#/recherche?type=aide", "🎓", "Bourses et aides", "Bourses d'admission, aide financière aux études, fondations, stages rémunérés.")}
       </div>`,

@@ -24,6 +24,8 @@
       </div>
       <h2 class="section-titre">Pour tout le monde</h2>
       <div class="cards">
+        <a class="card" href="#/vie"><span class="card-ico" aria-hidden="true">🗓️</span><h2>Vie étudiante : horaire et simulation</h2>
+          <p>L'horaire type d'une semaine au cégep ou à l'université, puis une session complète à vivre : examens, imprévus, énergie et budget.</p></a>
         <a class="card" href="#/demarches"><span class="card-ico" aria-hidden="true">📅</span><h2>Dates et démarches</h2>
           <p>Le calendrier d'admission de cette année, la prochaine date à ne pas manquer et ta liste de documents.</p></a>
         <a class="card" href="#/budget"><span class="card-ico" aria-hidden="true">💰</span><h2>Budget loin de chez soi</h2>
@@ -51,6 +53,7 @@
     "/budget": BUDGET.budget,
     "/recherche": RECHERCHE.recherche,
     "/demarches": DEMARCHES.demarches,
+    "/vie": VIE.vie,
     "/compte": COMPTE.vue,
   };
 

@@ -549,7 +549,7 @@ a.tag:hover { filter: brightness(1.15); }
 .res-kind.prog { background: color-mix(in srgb, var(--ceg) 18%, transparent); color: var(--ceg); }
 
 @media (max-width: 680px) {
-  .topnav a[data-nav="budget"], .topnav a[data-nav="recherche"] { display: none; }
+  .topnav a[data-nav="budget"], .topnav a[data-nav="recherche"], .topnav a[data-nav="demarches"] { display: none; }
   .budget-bars .bar-row { grid-template-columns: 7rem 1fr 4.5rem; }
 }
 @media (max-width: 900px) {
@@ -617,3 +617,57 @@ a.tag:hover { filter: brightness(1.15); }
 .contact-liste li { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; }
 .contact-liste span { min-width: 6.5rem; font-weight: 650; color: var(--muted); }
 .contact-liste .copier { padding: .1rem .55rem; font-size: .75rem; }
+
+/* ---------- Vie étudiante : horaire type et simulation ---------- */
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .6rem 1.2rem; margin-top: .9rem; }
+.sliders label { display: grid; gap: .2rem; font-size: .85rem; font-weight: 600; }
+.sliders output { font-weight: 700; color: var(--brand); }
+.semaine168 { display: flex; height: 18px; border-radius: 999px; overflow: hidden; margin: 1rem 0 .5rem; border: 1px solid var(--line); }
+.semaine168 i { display: block; min-width: 0; }
+.legende { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .8rem; color: var(--muted); margin: .4rem 0; }
+.legende i { display: inline-block; width: .7rem; height: .7rem; border-radius: 3px; margin-right: .3rem; vertical-align: -1px; }
+.t-cours { background: var(--brand); }
+.t-labo { background: var(--brand-2); }
+.t-stage { background: var(--ceg); }
+.t-etude { background: var(--sec); }
+.t-travail { background: #f59e0b; }
+.t-trajet { background: #94a3b8; }
+.t-sommeil { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.t-routine { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+.t-sport { background: #22c55e; }
+.t-sorties { background: #ec4899; }
+.t-libre { background: transparent; }
+.horaire-wrap { overflow-x: auto; margin: 1rem 0 .5rem; border-radius: var(--radius); }
+.horaire { --h-ligne: 2.1rem; display: grid; grid-template-columns: 3rem repeat(7, minmax(78px, 1fr)); min-width: 640px; position: relative;
+  background: var(--glass); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: .3rem; }
+.h-jour { grid-row: 1; text-align: center; font-weight: 700; font-size: .85rem; padding: .3rem 0; }
+.h-heure { grid-column: 1; font-size: .72rem; color: var(--muted); padding-top: .1rem; }
+.h-case { border-top: 1px dashed var(--line); }
+.h-bloc { margin: 1px 2px; border-radius: 8px; padding: .2rem .35rem; font-size: .72rem; line-height: 1.2; overflow: hidden; color: #fff;
+  display: flex; flex-direction: column; box-shadow: 0 2px 8px rgba(0,0,0,.15); z-index: 1; }
+.h-bloc b { font-weight: 650; }
+.h-bloc span { opacity: .85; }
+.h-bloc.t-etude, .h-bloc.t-labo { color: #0b0d18; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .8rem; margin: .5rem 0 1rem; }
+.grid4 .stat strong { font-size: 1.7rem; }
+.grid4 .stat strong.petit { font-size: 1.25rem; }
+.h4 { font-size: 1.05rem; margin: 1rem 0 .4rem; }
+.sim-tete { display: grid; gap: .6rem; }
+.sim-tete h2 { margin: .1rem 0 0; }
+.progress { height: 8px; border-radius: 999px; background: var(--glass-strong); overflow: hidden; }
+.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); }
+.jauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .5rem 1.2rem; margin: .8rem 0; }
+.jauge { display: grid; grid-template-columns: 7.5rem 1fr 3rem; align-items: center; gap: .5rem; font-size: .9rem; }
+.jauge .barre { height: 10px; border-radius: 999px; background: var(--glass-strong); overflow: hidden; }
+.jauge .barre i { display: block; height: 100%; background: var(--muted); }
+.jauge .barre i.ok { background: var(--ok); } .jauge .barre i.mid { background: var(--mid); } .jauge .barre i.ko { background: var(--ko); }
+.jauge b { text-align: right; }
+.jauge b.neg { color: var(--ko); } .jauge b.pos { color: var(--ok); }
+.courbes { width: 100%; max-width: 640px; height: auto; display: block; margin: .5rem 0 0; }
+.courbes .grille { stroke: var(--line); stroke-width: 1; }
+.evt { border-left: 4px solid var(--mid); }
+.evt .row-actions { margin-top: .6rem; }
+.journal { list-style: none; padding: 0; display: grid; gap: .45rem; }
+.journal li { padding: .55rem .9rem; border-radius: 12px; background: var(--glass); border: 1px solid var(--glass-border); }
+.journal p { margin: .2rem 0; }
+.journal .tl-date { font-size: .78rem; color: var(--muted); font-weight: 650; }
