@@ -610,3 +610,10 @@ a.tag:hover { filter: brightness(1.15); }
 .etapes li::before { content: counter(e); position: absolute; left: .8rem; top: .7rem; width: 1.6rem; height: 1.6rem; border-radius: 50%;
   display: grid; place-items: center; font-weight: 700; font-size: .85rem; background: var(--brand); color: var(--brand-ink); }
 .etapes p { margin: .2rem 0; }
+
+/* ---------- Coordonnées dans la fiche ---------- */
+.contact { padding: .8rem 1rem; border-radius: 14px; background: var(--brand-soft); }
+.contact-liste { list-style: none; padding: 0 !important; margin: 0; display: grid; gap: .35rem; }
+.contact-liste li { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; }
+.contact-liste span { min-width: 6.5rem; font-weight: 650; color: var(--muted); }
+.contact-liste .copier { padding: .1rem .55rem; font-size: .75rem; }

@@ -138,7 +138,7 @@ CE.CEGEP_PLUS = {
   "gerald-godin": { site: "https://www.cgodin.qc.ca" },
   "john-abbott": { site: "https://www.johnabbott.qc.ca", equipe: "Islanders" },
   "maisonneuve": { site: "https://www.cmaisonneuve.qc.ca" },
-  "marie-victorin": { site: "https://www.collegemv.qc.ca", equipe: "Atlas" },
+  "marie-victorin": { site: "https://cegepmv.ca", equipe: "Atlas" },
   "rosemont": { site: "https://www.crosemont.qc.ca", equipe: "Gaulois" },
   "saint-laurent": { site: "https://www.cegepsl.qc.ca", equipe: "Patriotes" },
   "vanier": { site: "https://www.vaniercollege.qc.ca", equipe: "Cheetahs" },
@@ -154,7 +154,7 @@ CE.CEGEP_PLUS = {
   "saint-hyacinthe": { site: "https://www.cegepsth.qc.ca", equipe: "Lauréats" },
   "saint-jean": { site: "https://www.cstjean.qc.ca", equipe: "Géants" },
   "sorel-tracy": { site: "https://www.cegepst.qc.ca", equipe: "Rebelles" },
-  "valleyfield": { site: "https://www.colval.qc.ca", equipe: "Noir et Or" },
+  "valleyfield": { site: "https://www.cegepvalleyfield.ca", equipe: "Noir et Or" },
   "garneau": { site: "https://www.cegepgarneau.ca", equipe: "Élans" },
   "limoilou": { site: "https://www.cegeplimoilou.ca", equipe: "Titans" },
   "sainte-foy": { site: "https://www.csfoy.ca", equipe: "Dynamiques" },
@@ -178,7 +178,7 @@ CE.CEGEP_PLUS = {
   "matane": { site: "https://www.cegep-matane.qc.ca" },
   "la-pocatiere": { site: "https://www.cegeplapocatiere.qc.ca", equipe: "Gaulois" },
   "gaspesie": { site: "https://www.cegepgim.ca" },
-  "baie-comeau": { site: "https://www.cegep-baie-comeau.qc.ca", equipe: "Trappeurs" },
+  "baie-comeau": { site: "https://cegepbc.ca", equipe: "Trappeurs" },
   "sept-iles": { site: "https://www.cegepsi.ca", equipe: "Voyageurs" },
 };
 

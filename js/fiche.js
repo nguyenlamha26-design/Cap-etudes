@@ -50,6 +50,26 @@
       .map((a) => `<li><a href="${a.lien}" target="_blank" rel="noopener">${esc(a.nom)}</a> <span class="muted">· ${esc(a.montant)}</span></li>`).join("")}</ul>`;
   }
 
+  /* Coordonnées : courriel (avec un objet déjà rempli), téléphone, formulaire et page « Nous joindre ». */
+  function contactHtml(id, nom) {
+    const c = (CE.CONTACTS || {})[id];
+    if (!c) return "";
+    const tel = c.tel ? c.tel.match(/(?:1 )?\d{3}[ .-]\d{3}[ .-]\d{4}/) : null;
+    const objet = encodeURIComponent("Demande d'information : admission");
+    return `
+      <section class="fiche-sec contact">
+        <h4>📬 Contacter ${esc(nom)}</h4>
+        <ul class="contact-liste small">
+          ${c.courriel ? `<li><span>Courriel</span><a href="mailto:${c.courriel}?subject=${objet}">${esc(c.courriel)}</a>
+            <button type="button" class="btn ghost small copier" data-copier="${esc(c.courriel)}">Copier</button></li>` : ""}
+          ${c.tel ? `<li><span>Téléphone</span>${tel ? `<a href="tel:+${(tel[0].startsWith("1 ") ? "" : "1") + tel[0].replace(/\D/g, "")}">${esc(c.tel)}</a>` : esc(c.tel)}</li>` : ""}
+          ${c.formulaire ? `<li><span>Formulaire</span><a href="${c.formulaire}" target="_blank" rel="noopener">Écrire en ligne →</a></li>` : ""}
+          <li><span>Pour</span>${esc(c.service)} · <a href="${c.page}" target="_blank" rel="noopener">page officielle</a></li>
+        </ul>
+        ${!c.courriel ? `<p class="muted small">Cet établissement n'affiche pas d'adresse courriel publique : utilise le ${c.formulaire ? "formulaire ou le " : ""}téléphone.</p>` : ""}
+      </section>`;
+  }
+
   /* Admission, résidences, stages, échanges et droits de scolarité. */
   function plusUni(u) {
     const p = (CE.UNI_PLUS || {})[u.id];
@@ -81,6 +101,7 @@
         ${vieHtml(CE.VIE_SOCIALE[u.id])}
         ${f.vie ? `<p class="small muted">${esc(f.vie)}</p>` : ""}
       </section>
+      ${contactHtml(u.id, u.court || u.nom)}
       ${plusUni(u)}
       ${f.taille ? `<section class="fiche-sec fiche">
         <div><h4>En bref</h4><p class="small">${esc(f.taille)}</p><p class="small"><b>Campus :</b> ${f.campus.map(esc).join(" · ")}</p></div>
@@ -114,7 +135,7 @@
     return {
       titre: c.nom,
       sous: `${c.ville} · ${c.region}${c.langue === "en" ? " · anglophone" : ""} · ${progs.length} programmes répertoriés`,
-      corps: `
+      corps: `${contactHtml(c.id, "le cégep")}
         <section class="fiche-sec"><h4>💰 Bourses et aides au cégep</h4>
           <ul class="small">${v.bourses.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
           <p class="small muted">Les montants sont publiés par la Fondation du cégep${pl.site ? ` : <a href="${pl.site}" target="_blank" rel="noopener">site du cégep</a>` : ""}.</p>
@@ -139,6 +160,11 @@
     document.body.appendChild(dlg);
     // Clic sur le fond ou sur un lien interne : on ferme.
     dlg.addEventListener("click", (e) => {
+      const cp = e.target.closest("[data-copier]");
+      if (cp) {
+        navigator.clipboard && navigator.clipboard.writeText(cp.dataset.copier).then(() => { cp.textContent = "Copié !"; setTimeout(() => (cp.textContent = "Copier"), 1500); });
+        return;
+      }
       if (e.target === dlg || e.target.closest("[data-fermer]")) dlg.close();
       else if (e.target.closest('a[href^="#/"]')) dlg.close();
     });
