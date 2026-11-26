@@ -144,12 +144,13 @@
             <span class="score"><b>${r.s}</b><span class="muted small">/100</span></span>
           </summary>
           <div class="rank-body">
-            ${ficheHtml(r.u, f)}
+            ${FICHE.html(r.u, f)}
             <h4>Pourquoi ce score</h4>
             <ul class="crit-list">${CRITERES.filter((c) => st.poids[c.k] > 0).map((c) =>
               `<li><span class="crit-score">${r.sc[c.k]}/5</span> <b>${c.t}</b> : ${explication(c, r.u, r.sc, r.km)}</li>`).join("")}</ul>
             <div class="row-actions">
-              <a class="btn small" href="${r.u.site}" target="_blank" rel="noopener">Site de l'admission</a>
+              <button class="btn small" type="button" data-fiche="u:${r.u.id}">Fiche complète</button>
+              <a class="btn ghost small" href="${r.u.site}" target="_blank" rel="noopener">Site de l'admission</a>
               <a class="btn ghost small" href="#/budget?ville=${encodeURIComponent(r.u.ville)}">Estimer mon budget à ${esc(r.u.ville)}</a>
             </div>
           </div>
@@ -181,18 +182,5 @@
     rendre();
   }
 
-  /* Fiche d'une université (réutilisée par la recherche). */
-  function ficheHtml(u, f) {
-    if (!f || !f.taille) return "";
-    return `
-      <div class="fiche">
-        <div><h4>En bref</h4><p>${esc(f.taille)}</p><p class="small"><b>Campus :</b> ${f.campus.map(esc).join(" · ")}</p></div>
-        <div><h4>Points forts</h4><div class="tags">${f.forces.map((x) => `<span class="tag">${esc(x)}</span>`).join("")}</div></div>
-        <div><h4>Vie et logement</h4><p class="small">${esc(f.vie)}</p><p class="small">${esc(f.logement)}</p></div>
-        <div><h4>Bourses et aides</h4><ul class="small">${f.aides.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>
-      </div>`;
-  }
-
   CEGEP.classement = classement;
-  window.FICHE = { html: ficheHtml };
 })();

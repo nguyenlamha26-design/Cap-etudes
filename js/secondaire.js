@@ -192,7 +192,8 @@
     const etat = {
       mode: params.get("prog") ? "prog" : (params.get("mode") || "cegep"),
       prog: params.get("prog") || "200.B1",
-      region: store.get("preal:region", "Montréal"),
+      // Un cégep demandé dans le lien impose sa région (sinon la région enregistrée l'écrasait).
+      region: (params.get("cegep") && UI.cegep(params.get("cegep")) || {}).region || store.get("preal:region", "Montréal"),
       cegep: params.get("cegep") || store.get("preal:cegep", null),
       acquis: new Set(store.get("preal:acquis", [])),
     };
@@ -240,6 +241,7 @@
             <label>Cégep <select id="cegep">${dansRegion.map((c) => `<option value="${c.id}" ${c.id === cg.id ? "selected" : ""}>${esc(c.nom)}</option>`).join("")}</select></label>
           </div>
           <h2>${esc(cg.nom)} <span class="muted small">${esc(cg.ville)}${cg.langue === "en" ? " · anglophone" : ""}</span></h2>
+          <p><button class="btn ghost small" type="button" data-fiche="c:${cg.id}">Fiche du cégep : bourses et vie sociale</button></p>
           <div class="table-wrap"><table class="tbl">
             <thead><tr><th>Programme</th><th>Type</th><th>Préalables du secondaire</th><th>Toi</th></tr></thead>
             <tbody>${progs.map((p) => `<tr>

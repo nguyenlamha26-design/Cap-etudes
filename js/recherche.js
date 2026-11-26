@@ -15,10 +15,10 @@
       const progs = CE.BACS.filter((b) => b.offres.some((o) => o.u === u.id));
       INDEX.push({ type: "uni", titre: u.nom, u, f, progs,
         texte: [u.nom, u.court, u.ville, f.taille, (f.campus || []).join(" "), (f.forces || []).join(" "), f.vie, f.logement,
-          (f.aides || []).join(" "), Object.values(u.notes).join(" "), progs.map((b) => b.nom).join(" "), "bourse aide residence"].join(" ") });
-      (f.aides || []).forEach((a) => INDEX.push({ type: "aide", sous: "ecole", titre: a, organisme: u.nom, u,
-        niveaux: ["uni"], criteres: /excellence/i.test(a) ? ["excellence"] : /besoin|urgence/i.test(a) ? ["besoin"] : /région|loin|extérieur/i.test(a) ? ["eloignement"] : [],
-        texte: `${a} ${u.nom} ${u.court} ${u.ville} bourse aide université` }));
+          (CE.BOURSES_UNI[u.id] || []).map((x) => x.nom).join(" "), (CE.VIE_SOCIALE[u.id] ? Object.values(CE.VIE_SOCIALE[u.id]).flat().join(" ") : ""), Object.values(u.notes).join(" "), progs.map((b) => b.nom).join(" "), "bourse aide residence"].join(" ") });
+      (CE.BOURSES_UNI[u.id] || []).forEach((bo) => INDEX.push({ type: "aide", sous: "ecole", titre: bo.nom, bo, organisme: u.nom, u,
+        niveaux: ["uni"], criteres: /cote r|excellence/i.test(bo.conditions + bo.nom) ? ["excellence"] : /besoin/i.test(bo.conditions) ? ["besoin"] : /engagement|leadership|implication/i.test(bo.conditions) ? ["implication"] : [],
+        texte: `${bo.nom} ${bo.montant} ${bo.conditions} ${u.nom} ${u.court} ${u.ville} bourse admission université` }));
     });
     CE.AIDES.forEach((a) => INDEX.push({ type: "aide", sous: a.type, titre: a.nom, a, niveaux: a.niveaux, criteres: a.criteres,
       texte: [a.nom, a.organisme, a.desc, a.montant, a.quand, a.criteres.map((c) => CE.CRITERES_AIDE[c]).join(" "), CE.TYPES_AIDE[a.type]].join(" ") }));
@@ -40,7 +40,7 @@
 
     app.innerHTML = page({
       titre: "Écoles, bourses et aides",
-      intro: "Cherche dans toutes les informations du site : fiches des universités et des cégeps, programmes, bourses d'admission, aides financières, emplois et mobilité. Essaie par exemple « résidence », « Rimouski », « bourse d'accueil » ou « génie ».",
+      intro: "Cherche dans toutes les informations du site : écoles, programmes, bourses d'admission, aides financières, emplois et mobilité. Essaie par exemple « résidence », « Rimouski », « bourse d'accueil » ou « génie ». Clique sur une école pour ouvrir sa fiche avec ses bourses et sa vie sociale.",
       retour: { href: "#/", label: "Accueil" },
       contenu: `
       <div class="panel search-box">
@@ -87,24 +87,20 @@
 
   function carte(e) {
     if (e.type === "uni") {
-      return `<details class="res-card">
-        <summary><span class="res-kind uni">Université</span><b>${esc(e.u.nom)}</b><span class="muted small">${esc(e.u.ville)} · ${e.u.langue === "fr" ? "français" : "anglais"} · ${e.progs.length} programmes répertoriés</span></summary>
-        <div class="res-body">
-          ${FICHE.html(e.u, e.f)}
-          <h4>Programmes répertoriés</h4>
-          <div class="tags">${e.progs.map((b) => {
-            const o = b.offres.find((x) => x.u === e.u.id);
-            return `<a class="tag" href="#/cegep/admissibilite?bac=${b.id}">${esc(b.nom)}${o.cote != null ? ` · ${fmt(o.cote, 1)}` : ""}</a>`;
-          }).join("")}</div>
-          <div class="row-actions"><a class="btn small" href="${e.u.site}" target="_blank" rel="noopener">Site de l'admission</a>
-            <a class="btn ghost small" href="#/budget?ville=${encodeURIComponent(e.u.ville)}">Budget à ${esc(e.u.ville)}</a></div>
-        </div></details>`;
+      const nb = (CE.BOURSES_UNI[e.u.id] || []).length, v = CE.VIE_SOCIALE[e.u.id];
+      return `<button type="button" class="res-card res-btn" data-fiche="u:${e.u.id}">
+        <span class="res-kind uni">Université</span><b>${esc(e.u.nom)}</b>
+        <span class="muted small">${esc(e.u.ville)} · ${e.u.langue === "fr" ? "français" : "anglais"} · ${e.progs.length} programmes</span>
+        <span class="small">💰 ${nb} bourse${nb > 1 ? "s" : ""} répertoriée${nb > 1 ? "s" : ""}${v ? ` · 🏆 ${esc(v.equipe.split(" (")[0])}` : ""}</span>
+        <span class="small lien">Ouvrir la fiche →</span></button>`;
     }
     if (e.type === "aide") {
       if (e.sous === "ecole") {
-        return `<article class="res-card flat"><span class="res-kind aide">Bourse de l'université</span><b>${esc(e.titre)}</b>
-          <span class="muted small">${esc(e.organisme)}</span>
-          <a class="small" href="${e.u.site}" target="_blank" rel="noopener">Site de l'université →</a></article>`;
+        const bo = e.bo;
+        return `<article class="res-card flat"><span class="res-kind aide">Bourse de l'université · ${bo.mode === "auto" ? "automatique" : "sur demande"}</span><b>${esc(bo.nom)}</b>
+          <span class="muted small">${FICHE.lien("u:" + e.u.id, e.organisme)} · ${esc(bo.montant)}</span>
+          <p class="small">${esc(bo.conditions)}</p>
+          <a class="small" href="${bo.lien}" target="_blank" rel="noopener">Page officielle →</a></article>`;
       }
       const a = e.a;
       return `<article class="res-card flat">
@@ -117,7 +113,7 @@
       </article>`;
     }
     if (e.type === "cegep") {
-      return `<article class="res-card flat"><span class="res-kind cegep">Cégep</span><b>${esc(e.c.nom)}</b>
+      return `<article class="res-card flat"><span class="res-kind cegep">Cégep</span><b>${FICHE.lien("c:" + e.c.id, e.c.nom)}</b>
         <span class="muted small">${esc(e.c.ville)} · ${esc(e.c.region)}${e.c.langue === "en" ? " · anglophone" : ""} · ${e.progs.length} programmes répertoriés</span>
         <a class="small" href="#/secondaire/prealables?mode=cegep&cegep=${e.c.id}">Programmes et préalables →</a>
         <a class="small" href="#/budget?ville=${encodeURIComponent(e.c.ville.split(",")[0])}">Budget dans cette ville →</a></article>`;

@@ -271,7 +271,7 @@
             <div class="prog-top"><span class="tag">${esc(CE.DOMAINES[b.domaine])}</span><span class="match">${s} %</span></div>
             <h3>${esc(b.nom)}</h3>
             <p class="small"><strong>DEC habituels :</strong> ${b.dec.map((c) => esc(dec(c) ? dec(c).nom : c)).join(", ")}</p>
-            <p class="small"><strong>Universités :</strong> ${b.offres.map((o) => uni(o.u).court).join(", ")}</p>
+            <p class="small"><strong>Universités :</strong> ${b.offres.map((o) => FICHE.lien("u:" + o.u, uni(o.u).court)).join(", ")}</p>
             <p class="small"><strong>Cote R :</strong> ${min == null ? "pas de cote publiée (non contingenté ou dossier)" : `à partir d'environ ${fmt(min, 1)}`}
               ${maCote && min != null ? (maCote >= min ? ' <span class="badge ok">à ta portée</span>' : ' <span class="badge ko">au-dessus de ta cote</span>') : ""}</p>
             <a class="small" href="#/cegep/admissibilite?bac=${b.id}">Voir les universités →</a>
@@ -370,7 +370,7 @@
           <tr class="st-${r.st.cls}">
             <td><b>${esc(r.b.nom)}</b>${r.o.note ? `<br><span class="muted small">${esc(r.o.note)}</span>` : ""}
               ${!r.decOk ? `<br><span class="badge warn" title="Préalables : ${esc(r.b.preal)}">Vérifie les préalables avec ton DEC</span>` : ""}</td>
-            <td><a href="${r.u.site}" target="_blank" rel="noopener">${esc(r.u.court)}</a></td>
+            <td>${FICHE.lien("u:" + r.u.id, r.u.court)}</td>
             <td>${esc(r.u.ville)}</td>
             <td>${r.o.cote == null ? '<span class="muted">—</span>' : fmt(r.o.cote, 1)}</td>
             <td>${r.ecart == null ? '<span class="muted">—</span>' : `<span class="${r.ecart >= 0 ? "pos" : "neg"}">${r.ecart >= 0 ? "+" : ""}${fmt(r.ecart, 1)}</span>`}</td>

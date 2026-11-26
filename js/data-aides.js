@@ -1,4 +1,4 @@
-/* Bourses et aides financières (hors bourses propres à chaque université, qui sont dans CE.FICHES).
+/* Bourses et aides financières (hors bourses propres à chaque université, qui sont dans CE.BOURSES_UNI).
  * Montants et dates indicatifs : ils changent chaque année, vérifie toujours sur le site officiel.
  * type : gouv | fondation | mobilite | emploi
  * niveaux : cegep, uni
