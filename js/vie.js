@@ -219,7 +219,7 @@
     if (sommeil < p.sommeil - 0.2) lignes.push(`Semaine trop chargée : tu as dormi environ ${fmt(sommeil, 1)} h par nuit.`);
     if (relache) lignes.push("Relâche : aucun cours.");
     if (!lignes.length) lignes.push("Semaine normale : cours, travaux et routine.");
-    s.journal.unshift({ w, lignes });
+    s.journal.unshift({ w, lignes, evt: ev ? s.evt : null });
     s.hist.push({ w, energie: Math.round(s.energie), moral: Math.round(s.moral), prep: prep == null ? null : Math.round(prep), argent: s.argent });
     if (ev) s.vus.push(s.evt);
     s.semaine = w; s.evt = null; s.choix = null;
@@ -273,24 +273,178 @@
       </div>`;
   }
 
-  function jauges(s) {
-    const moy = s.prepN ? s.prepSum / s.prepN : null;
-    const j = (t, v, cls, txt) => `<div class="jauge"><span>${t}</span><div class="barre"><i class="${cls}" style="width:${clamp(v, 0, 100)}%"></i></div><b>${txt}</b></div>`;
-    return `<div class="jauges">
-      ${j("⚡ Énergie", s.energie, s.energie < 35 ? "ko" : s.energie < 60 ? "mid" : "ok", Math.round(s.energie))}
-      ${j("🙂 Moral", s.moral, s.moral < 35 ? "ko" : s.moral < 60 ? "mid" : "ok", Math.round(s.moral))}
-      ${j("📚 Préparation", moy ?? 0, moy == null ? "" : moy < 60 ? "ko" : moy < 80 ? "mid" : "ok", moy == null ? "—" : Math.round(moy))}
-      <div class="jauge"><span>💵 Argent</span><b class="${s.argent < 0 ? "neg" : "pos"}">${fmt(s.argent, 0)} $</b></div>
+  /* ---------- Mise en scène style jeu ---------- */
+  const AVATARS = ["🧑‍🎓", "👩‍🎓", "👨‍🎓", "🧑🏽‍🎓", "👩🏿‍🎓", "👨🏻‍🎓"];
+  const LIEUX = [
+    { k: "campus", x: 12, nom: "Campus" }, { k: "sport", x: 31, ico: "🏟️", nom: "Gym" },
+    { k: "travail", x: 50, ico: "🏪", nom: "Travail" }, { k: "sorties", x: 69, ico: "☕", nom: "Café" },
+    { k: "maison", x: 88, ico: "🏠", nom: "Maison" },
+  ];
+  const LIEU_X = Object.fromEntries(LIEUX.map((l) => [l.k, l.x]));
+  const ACT_ICO = { cours: "📖", labo: "🧪", stage: "🩺", etude: "✏️", travail: "💼", sport: "⚽", sorties: "🎉", sommeil: "💤", maison: "🏠" };
+  const ACT_FX = { travail: "+💵", sport: "+⚡", sorties: "+🙂", etude: "+📚", cours: "+🧠", labo: "+🧠", stage: "+🩺" };
+  const EVT_ICO = { quart: "💼", grippe: "🤒", equipe: "👥", cell: "📱", party: "🎉", atelier: "🧠", bourse: "💰", club: "🏀", quiz: "❓",
+    visite: "🏡", stage: "📄", loyer: "🏠", nuit: "🌙", prof: "👩‍🏫", rentree: "🎒", relache: "🏖️" };
+  const NOMS_JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  const reduit = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const moment = (h) => (h < 9 ? "matin" : h < 17 ? "jour" : h < 20 ? "soir" : "nuit");
+  const humeur = (s) => (s.energie < 30 ? "🥱" : s.moral >= 75 ? "😄" : s.moral >= 55 ? "🙂" : s.moral >= 35 ? "😐" : s.moral >= 20 ? "😟" : "😫");
+  const lieuDe = (b) => (["cours", "labo", "stage"].includes(b.type) ? "campus" : b.type === "etude" ? (b.j < 5 && b.h < 17 ? "campus" : "maison") : b.type);
+  const moyenneSession = (s) => Math.round(0.4 * (s.notes.mi ?? 0) + 0.6 * (s.notes.fin ?? 0));
+
+  function sceneHtml(s, p, avatar) {
+    const fin = s.fini, moy = moyenneSession(s);
+    const x = fin ? LIEU_X.campus : LIEU_X.maison;
+    const bulle = fin ? (moy >= 60 ? "🎓" : "😮‍💨") : "🏠";
+    const hud = fin ? "Session terminée !" : `Semaine ${s.semaine + 1} · prêt·e à commencer`;
+    return `<div class="scene m-${fin ? "jour" : "matin"}" id="scene" aria-label="Animation de la semaine">
+      <div class="ciel"><span class="astre soleil">☀️</span><span class="astre lune">🌙</span><span class="etoiles">✦ ✧ ✦ ✧ ✦</span>
+        <span class="nuage n1">☁️</span><span class="nuage n2">☁️</span></div>
+      <div class="hud"><b id="sc-hud">${hud}</b><span id="sc-heure"></span></div>
+      ${LIEUX.map((l) => `<div class="lieu" style="left:${l.x}%"><span>${l.k === "campus" ? (p.niveau === "uni" ? "🏛️" : "🏫") : l.ico}</span><small>${l.nom}</small></div>`).join("")}
+      <div class="sol"></div>
+      <div class="avatar" id="avatar" style="left:${x}%"><span class="bulle" id="bulle">${bulle}</span><span class="perso">${avatar}</span><span class="humeur" id="humeur">${humeur(s)}</span></div>
+      <button type="button" class="btn ghost small sc-passer" data-act="passer" hidden>Passer ⏭</button>
+      <div class="sc-overlay" id="sc-overlay"></div>
     </div>`;
   }
 
-  function simulationHtml(s, p) {
+  /* Anime la semaine qui vient d'être vécue : chaque bloc de l'horaire, jour par jour, puis les examens. */
+  function animerSemaine(vue, s, p, w, epreuve, fini) {
+    const scene = vue.querySelector("#scene");
+    if (!scene || reduit()) { fini(); return null; }
+    const av = scene.querySelector("#avatar"), bulle = scene.querySelector("#bulle"), hud = scene.querySelector("#sc-hud"), heure = scene.querySelector("#sc-heure");
+    const passer = scene.querySelector(".sc-passer");
+    const relache = w === V.relache;
+    const blocs = construireHoraire(p).blocs.filter((b) => !(relache && ["cours", "labo", "stage"].includes(b.type)));
+    const etapes = [];
+    for (let j = 0; j < 7; j++) {
+      blocs.filter((b) => b.j === j).sort((a, b) => a.h - b.h).forEach((b) => etapes.push({ j, h: b.h, type: b.type, lieu: lieuDe(b) }));
+      etapes.push({ j, h: 23, type: "sommeil", lieu: "maison" });
+    }
+    const evtIco = s.journal[0] && s.journal[0].evt ? EVT_ICO[s.journal[0].evt] : null;
+    const dur = clamp(Math.round(6000 / etapes.length), 120, 260);
+    let i = 0, timer = null, arrete = false, x = LIEU_X.maison;
+    passer.hidden = false;
+    scene.classList.add("anime");
+    const terminer = () => {
+      if (arrete) return; arrete = true; clearTimeout(timer);
+      scene.classList.remove("anime"); passer.hidden = true;
+      fini();
+    };
+    const fx = (txt) => {
+      const e = document.createElement("span"); e.className = "fx"; e.textContent = txt; e.style.left = x + "%";
+      scene.appendChild(e); setTimeout(() => e.remove(), 1000);
+    };
+    const examen = () => {
+      if (!epreuve) { terminer(); return; }
+      const o = scene.querySelector("#sc-overlay");
+      const verdict = epreuve.n >= 85 ? "Excellent !" : epreuve.n >= 70 ? "Réussi" : epreuve.n >= 60 ? "De justesse" : "Échec 😬";
+      o.innerHTML = `<div class="copie"><span class="copie-ico">📝</span><b>${esc(epreuve.t)}</b><strong class="note">0 %</strong><span class="tampon ${epreuve.n >= 60 ? "ok" : "ko"}">${verdict}</span></div>`;
+      o.classList.add("on");
+      const note = o.querySelector(".note"), t0 = performance.now();
+      const pas = (t) => {
+        if (arrete) return;
+        const k = Math.min(1, (t - t0) / 900);
+        note.textContent = Math.round(epreuve.n * k) + " %";
+        if (k < 1) requestAnimationFrame(pas);
+        else { o.querySelector(".tampon").classList.add("on"); timer = setTimeout(terminer, 1100); }
+      };
+      requestAnimationFrame(pas);
+    };
+    const suivante = () => {
+      if (arrete) return;
+      if (i >= etapes.length) { examen(); return; }
+      const e = etapes[i++];
+      const nx = LIEU_X[e.lieu];
+      av.classList.toggle("gauche", nx < x);
+      av.classList.toggle("marche", nx !== x);
+      av.style.transitionDuration = dur + "ms";
+      av.style.left = nx + "%"; x = nx;
+      bulle.textContent = ACT_ICO[e.type] || "🙂";
+      scene.className = scene.className.replace(/m-\w+/, "m-" + moment(e.h));
+      hud.textContent = `Semaine ${w} · ${NOMS_JOURS[e.j]}`;
+      heure.textContent = e.type === "sommeil" ? "Dodo" : `${e.h} h`;
+      if (ACT_FX[e.type] && Math.random() < 0.5) setTimeout(() => !arrete && fx(ACT_FX[e.type]), dur * 0.6);
+      if (e.j === 2 && e.type === "sommeil" && evtIco) fx(evtIco);
+      timer = setTimeout(suivante, e.type === "sommeil" ? dur * 2 : dur);
+    };
+    suivante();
+    return terminer;
+  }
+
+  /* Petits effets après une semaine : jauges qui glissent, chiffres qui défilent. */
+  function effets(vue) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      vue.querySelectorAll("[data-to]").forEach((el) => (el.style.width = el.dataset.to + "%"));
+      vue.querySelectorAll("[data-a]").forEach((el) => {
+        const de = Number(el.dataset.de), a = Number(el.dataset.a), argent = el.dataset.fmt === "argent";
+        if (de === a || reduit()) return;
+        const t0 = performance.now();
+        const pas = (t) => {
+          const k = Math.min(1, (t - t0) / 800), v = Math.round(de + (a - de) * (1 - Math.pow(1 - k, 3)));
+          el.textContent = argent ? `${fmt(v, 0)} $` : v;
+          if (k < 1) requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+    }));
+  }
+
+  function confettis(vue) {
+    if (reduit()) return;
+    const box = document.createElement("div"); box.className = "confettis"; box.setAttribute("aria-hidden", "true");
+    const couleurs = ["#ff5d8f", "#ffd166", "#06d6a0", "#4cc9f0", "#8b5cf6", "#ff8c42"];
+    box.innerHTML = Array.from({ length: 70 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${couleurs[i % couleurs.length]};animation-delay:${(Math.random() * 0.8).toFixed(2)}s;animation-duration:${(2.2 + Math.random() * 1.6).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)"></i>`).join("");
+    vue.appendChild(box);
+    setTimeout(() => box.remove(), 4500);
+  }
+
+  function trophees(s, p) {
+    const moy = moyenneSession(s), pr = profil(p);
+    const moyE = s.hist.reduce((a, h) => a + h.energie, 0) / s.hist.length;
+    const moyM = s.hist.reduce((a, h) => a + h.moral, 0) / s.hist.length;
+    const T = [
+      ["🦉", "Studieux", "Tu as étudié autant que tes cours le demandent.", etude(p) >= heuresPerso(pr)],
+      ["😴", "Bien reposé", "8 h de sommeil et une bonne énergie moyenne.", p.sommeil >= 8 && moyE >= 60],
+      ["💸", "Économe", "Tu finis la session avec plus d'argent qu'au départ.", s.argent >= (num(p.economies) || 0)],
+      ["🎉", "Vie sociale", "Un moral moyen de 70 ou plus.", moyM >= 70],
+      ["🏆", "Tête de classe", "Une moyenne de 85 % ou plus.", moy >= 85],
+      ["💪", "Persévérant", "Tes examens finaux battent ta mi-session.", (s.notes.fin ?? 0) > (s.notes.mi ?? 0)],
+      ["🚀", "Futur stagiaire", "Tu as postulé pour un stage d'été.", s.stageEte],
+    ];
+    const n = T.filter((t) => t[3]).length;
+    return `<div class="panel trophees"><h3 class="h4">Trophées : ${n} sur ${T.length}</h3>
+      <div class="trophee-grille">${T.map(([ico, nom, d, ok], i) => `<div class="trophee ${ok ? "ok" : "verrou"}" style="animation-delay:${i * 0.12}s" title="${esc(d)}"><span>${ok ? ico : "🔒"}</span><b>${esc(nom)}</b><small>${esc(d)}</small></div>`).join("")}</div></div>`;
+  }
+
+  function jauges(s, a) {
+    const moy = s.prepN ? s.prepSum / s.prepN : null;
+    const moyA = a && a.prepN ? a.prepSum / a.prepN : null;
+    const delta = (d, suffixe = "") => (d ? `<em class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : "−"}${fmt(Math.abs(d), 0)}${suffixe}</em>` : "");
+    const j = (t, v, va, cls) => {
+      const de = a && va != null ? va : v;
+      const d = a && va != null ? Math.round(v) - Math.round(va) : 0;
+      return `<div class="jauge"><span>${t}</span><div class="barre"><i class="${cls}" style="width:${clamp(de, 0, 100)}%" data-to="${clamp(v, 0, 100)}"></i></div><b data-de="${Math.round(de)}" data-a="${Math.round(v)}">${Math.round(de)}</b>${delta(d)}</div>`;
+    };
+    const dA = a ? s.argent - a.argent : 0;
+    return `<div class="jauges">
+      ${j("⚡ Énergie", s.energie, a?.energie, s.energie < 35 ? "ko" : s.energie < 60 ? "mid" : "ok")}
+      ${j("🙂 Moral", s.moral, a?.moral, s.moral < 35 ? "ko" : s.moral < 60 ? "mid" : "ok")}
+      ${moy == null ? `<div class="jauge"><span>📚 Préparation</span><div class="barre"><i></i></div><b>—</b></div>` : j("📚 Préparation", moy, moyA, moy < 60 ? "ko" : moy < 80 ? "mid" : "ok")}
+      <div class="jauge argent"><span>💵 Argent</span><span></span><b class="${s.argent < 0 ? "neg" : "pos"}" data-fmt="argent" data-de="${a ? a.argent : s.argent}" data-a="${s.argent}">${fmt(a ? a.argent : s.argent, 0)} $</b>${delta(dA, " $")}</div>
+    </div>`;
+  }
+
+  function simulationHtml(s, p, avatar, transition) {
     if (!s) {
-      return `<div class="panel">
+      return `<div class="panel sim-debut">
         <h2 class="h3">Vis ta première session, semaine par semaine</h2>
-        <p>Pendant ${V.semaines} semaines, tu gères ton temps : étude, emploi, sommeil, amis, sport. Des imprévus arrivent (grippe, party, quart de travail de plus, bourse…) et tu choisis quoi faire. Tes choix font bouger ton énergie, ton moral, ta préparation et ton argent, jusqu'aux examens de mi-session (semaine ${V.examens[0]}) et de fin de session.</p>
+        <p>Pendant ${V.semaines} semaines, ton personnage vit ta vraie semaine : cours, étude, emploi, sport, sorties, dodo. Des imprévus arrivent (grippe, party, quart de travail de plus, bourse…) et tu choisis quoi faire. Tes choix font bouger ton énergie, ton moral, ta préparation et ton argent, jusqu'aux examens de mi-session (semaine ${V.examens[0]}) et de fin de session.</p>
+        <p><b>Choisis ton personnage</b></p>
+        <div class="avatars">${AVATARS.map((a) => `<button type="button" class="avatar-choix ${a === avatar ? "on" : ""}" data-avatar="${a}" aria-label="Personnage ${a}">${a}</button>`).join("")}</div>
         <p class="small muted">Tes réglages ci-dessus servent de point de départ ; tu peux les changer entre deux semaines.</p>
-        <button class="btn" data-act="demarrer">Commencer la session</button>
+        <button class="btn" data-act="demarrer">🎮 Commencer la session</button>
       </div>`;
     }
     if (s.profil !== p.profil) {
@@ -299,28 +453,31 @@
     }
     const ev = s.evt ? evtDef(s.evt) : null;
     const b = bilan(p);
-    const graph = s.hist.length > 1 ? `<svg class="courbes" viewBox="0 0 300 100" role="img" aria-label="Évolution de l'énergie, du moral et de la préparation">
+    const a = transition && transition.avant;
+    const graph = s.hist.length > 1 ? `<details class="panel"><summary><b>Courbes de la session</b></summary><svg class="courbes" viewBox="0 0 300 100" role="img" aria-label="Évolution de l'énergie, du moral et de la préparation">
         ${[25, 50, 75].map((v) => `<line x1="10" x2="290" y1="${90 - v * 0.8}" y2="${90 - v * 0.8}" class="grille"/>`).join("")}
         ${courbe(s.hist, "energie", "var(--ok)")}${courbe(s.hist, "moral", "var(--brand-2)")}${courbe(s.hist, "prep", "var(--brand)")}
-      </svg><div class="legende"><span><i style="background:var(--ok)"></i>Énergie</span><span><i style="background:var(--brand-2)"></i>Moral</span><span><i style="background:var(--brand)"></i>Préparation</span></div>` : "";
+      </svg><div class="legende"><span><i style="background:var(--ok)"></i>Énergie</span><span><i style="background:var(--brand-2)"></i>Moral</span><span><i style="background:var(--brand)"></i>Préparation</span></div></details>` : "";
+    const w = s.semaine + 1;
     return `
-      ${s.fini ? rapport(s, p) : `
+      ${s.fini ? rapport(s, p) + trophees(s, p) : `
       <div class="panel sim-tete">
-        <div><span class="muted small">${esc(profil(p).nom)}</span><h2 class="h3">Semaine ${s.semaine + 1} sur ${V.semaines}${s.semaine + 1 === V.relache ? " · relâche" : V.examens.includes(s.semaine + 1) ? " · examens" : ""}</h2></div>
+        <div><span class="muted small">${esc(profil(p).nom)}</span><h2 class="h3">Semaine ${w} sur ${V.semaines}${w === V.relache ? " · 🏖️ relâche" : V.examens.includes(w) ? " · 📝 examens" : ""}</h2></div>
         <div class="progress"><i style="width:${(s.semaine / V.semaines) * 100}%"></i></div>
       </div>`}
-      ${jauges(s)}
-      ${graph}
-      ${!s.fini && ev ? `<div class="panel evt"><b>${esc(ev.t)}</b>
-        <div class="row-actions">${ev.choix.map((c, i) => `<button class="btn ${s.choix === i ? "" : "ghost"} small" data-choix="${i}">${esc(c.t)}</button>`).join("")}</div></div>` : ""}
+      ${sceneHtml(s, p, avatar)}
+      ${jauges(s, a)}
+      ${!s.fini && ev ? `<div class="panel evt ${transition ? "pop" : ""}"><span class="evt-ico" aria-hidden="true">${EVT_ICO[s.evt] || "⚠️"}</span><div><b>${esc(ev.t)}</b>
+        <div class="row-actions">${ev.choix.map((c, i) => `<button class="btn ${s.choix === i ? "" : "ghost"} small" data-choix="${i}">${esc(c.t)}</button>`).join("")}</div></div></div>` : ""}
       ${!s.fini ? `
       ${b.libre < 0 ? `<p class="badge warn">Ta semaine dépasse 168 heures de ${fmt(-b.libre, 1)} h : tu vas manquer de sommeil.</p>` : ""}
-      <div class="row-actions">
-        <button class="btn" data-act="semaine" ${ev && s.choix == null ? "disabled title=\"Choisis d'abord quoi faire\"" : ""}>Vivre la semaine ${s.semaine + 1}</button>
-        <button class="btn ghost" data-act="auto">Simuler jusqu'à la fin</button>
-        <button class="btn ghost" data-act="demarrer">Recommencer</button>
-      </div>` : `<div class="row-actions"><button class="btn" data-act="demarrer">Refaire une session</button></div>`}
-      ${s.journal.length ? `<h3 class="h4">Journal</h3><ol class="journal">${s.journal.map((j) => `<li><span class="tl-date">Semaine ${j.w}</span>${j.lignes.map((l) => `<p class="small">${l}</p>`).join("")}</li>`).join("")}</ol>` : ""}`;
+      <div class="row-actions sim-actions">
+        <button class="btn" data-act="semaine" ${ev && s.choix == null ? "disabled title=\"Choisis d'abord quoi faire\"" : ""}>▶ Vivre la semaine ${w}</button>
+        <button class="btn ghost" data-act="auto">⏩ Simuler jusqu'à la fin</button>
+        <button class="btn ghost" data-act="demarrer">↺ Recommencer</button>
+      </div>` : `<div class="row-actions"><button class="btn" data-act="demarrer">↺ Refaire une session</button></div>`}
+      ${graph}
+      ${s.journal.length ? `<h3 class="h4">Journal</h3><ol class="journal">${s.journal.map((j, i) => `<li class="${i === 0 && transition ? "neuf" : ""}"><span class="tl-date">Semaine ${j.w}</span>${j.lignes.map((l) => `<p class="small">${l}</p>`).join("")}</li>`).join("")}</ol>` : ""}`;
   }
 
   /* ---------- Page ---------- */
@@ -331,6 +488,8 @@
     }
     let onglet = params.get("vue") === "simulation" ? "simulation" : (params.get("vue") === "horaire" ? "horaire" : store.get("vie:onglet", "horaire"));
     let s = store.get("vie:sim", null);
+    let avatar = store.get("vie:avatar", AVATARS[0]);
+    let stopAnim = null;
     const villes = Object.keys(CE.LOYERS).filter((v) => v !== "_region");
     const sauver = () => { store.set("vie:params", p); store.set("vie:sim", s); store.set("vie:onglet", onglet); };
 
@@ -370,7 +529,7 @@
       maj();
     }
 
-    function maj() {
+    function maj(transition) {
       const b = bilan(p);
       app.querySelector("#bilan").innerHTML = `
         <div class="semaine168" role="img" aria-label="Répartition des 168 heures de la semaine">
@@ -379,7 +538,13 @@
         <div class="legende">${b.parts.map((x) => `<span><i class="t-${x.k}"></i>${x.t} ${fmt(x.h, 1)} h</span>`).join("")}<span><i class="t-libre"></i>Temps libre ${fmt(b.libre, 1)} h</span></div>
         <p class="small"><b>Charge de travail : ${fmt(b.charge, 0)} h par semaine</b> (cours, étude et emploi)${b.charge > 55 ? ' <span class="badge ko">très lourde</span>' : b.charge > 45 ? ' <span class="badge mid">lourde, comme un emploi à temps plein et plus</span>' : ' <span class="badge ok">raisonnable</span>'}
         · Revenus d'emploi ≈ ${fmt(p.travail * CE.SALAIRE_MIN * 0.87, 0)} $ net par semaine · Dépenses ≈ ${fmt(depensesSemaine(p, p.sorties), 0)} $ par semaine</p>`;
-      app.querySelector("#vue").innerHTML = onglet === "horaire" ? horaireHtml(p) : simulationHtml(s, p);
+      const vue = app.querySelector("#vue");
+      if (stopAnim && !transition) { const f = stopAnim; stopAnim = null; f(); return; }
+      vue.innerHTML = onglet === "horaire" ? horaireHtml(p) : simulationHtml(s, p, avatar, transition);
+      if (transition && onglet === "simulation") {
+        effets(vue);
+        if (s && s.fini && !transition.avant.fini && moyenneSession(s) >= 75) confettis(vue);
+      }
       sauver();
     }
 
@@ -398,14 +563,35 @@
         maj();
       }));
       app.querySelector("#vue").onclick = (e) => {
+        const vue = app.querySelector("#vue");
+        if (stopAnim) { if (e.target.closest("#scene, [data-act=passer]")) stopAnim(); return; }
+        const av = e.target.closest("[data-avatar]");
+        if (av) { avatar = av.dataset.avatar; store.set("vie:avatar", avatar); maj(); return; }
         const c = e.target.closest("[data-choix]");
         if (c) { s.choix = Number(c.dataset.choix); maj(); return; }
         const a = e.target.closest("[data-act]"); if (!a) return;
-        if (a.dataset.act === "demarrer") { s = nouvelleSim(p); s.evt = tirerEvenement(s, p); }
-        if (a.dataset.act === "semaine" && s && !s.fini) vivreSemaine(s, p);
-        if (a.dataset.act === "auto" && s) while (!s.fini) vivreSemaine(s, p);
-        maj();
-        if (a.dataset.act !== "demarrer") app.querySelector("#vue").scrollIntoView({ behavior: "smooth", block: "start" });
+        const instantane = () => ({ energie: s.energie, moral: s.moral, argent: s.argent, prepSum: s.prepSum, prepN: s.prepN, fini: s.fini });
+        if (a.dataset.act === "demarrer") { s = nouvelleSim(p); s.evt = tirerEvenement(s, p); maj(); return; }
+        if (a.dataset.act === "auto" && s) {
+          const avant = instantane();
+          while (!s.fini) vivreSemaine(s, p);
+          maj({ avant });
+          vue.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        if (a.dataset.act === "semaine" && s && !s.fini) {
+          const avant = instantane();
+          const quiz = s.evt && evtDef(s.evt).quiz;
+          vivreSemaine(s, p);
+          const w = s.semaine;
+          const epreuve = w === V.examens[0] ? { t: "Examens de mi-session", n: s.notes.mi }
+            : w === V.examens[1] ? { t: "Examens finaux", n: s.notes.fin }
+            : quiz ? { t: "Quiz surprise", n: s.quiz[s.quiz.length - 1] } : null;
+          vue.querySelectorAll(".sim-actions button, .evt button").forEach((x) => (x.disabled = true));
+          const scene = vue.querySelector("#scene");
+          if (scene) scene.scrollIntoView({ behavior: "smooth", block: "center" });
+          stopAnim = animerSemaine(vue, s, p, w, epreuve, () => { stopAnim = null; maj({ avant }); });
+        }
       };
     }
 
