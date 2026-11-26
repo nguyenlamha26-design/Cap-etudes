@@ -6,8 +6,8 @@
     get(k, def) {
       try { const v = localStorage.getItem("capetudes:" + k); return v == null ? def : JSON.parse(v); } catch { return def; }
     },
-    set(k, v) { try { localStorage.setItem("capetudes:" + k, JSON.stringify(v)); } catch { /* stockage plein ou bloqué */ } },
-    del(k) { try { localStorage.removeItem("capetudes:" + k); } catch { /* rien */ } },
+    set(k, v) { try { localStorage.setItem("capetudes:" + k, JSON.stringify(v)); } catch { /* stockage plein ou bloqué */ } if (window.COMPTE) COMPTE.modifie(); },
+    del(k) { try { localStorage.removeItem("capetudes:" + k); } catch { /* rien */ } if (window.COMPTE) COMPTE.modifie(); },
   };
 
   const nf = (d) => new Intl.NumberFormat("fr-CA", { minimumFractionDigits: d, maximumFractionDigits: d });

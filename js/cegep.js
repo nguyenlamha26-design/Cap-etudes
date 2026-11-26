@@ -21,7 +21,9 @@
         ${carte("#/cegep/prevision", "🎯", "Prévision de cote R", "Quelle cote R viser dans tes prochains cours pour atteindre ton objectif ?")}
         ${carte("#/cegep/interets", "🧭", "Test d'intérêts universitaire", "30 questions pour trouver les baccalauréats qui te correspondent.")}
         ${carte("#/cegep/admissibilite", "📊", "Avec ma cote R, où puis-je aller ?", "Tableau qui se met à jour selon ta cote R : programmes et universités à ta portée.")}
-        ${carte("#/cegep/classement", "🏆", "Classement des universités", "Classe les universités selon tes critères : bourses, parcours, DEC-BAC, études à l'étranger, ville.")}
+        ${carte("#/cegep/classement", "🏆", "Classement des universités", "Classe les universités selon 12 critères : bourses, stages, coût de la vie, distance de chez toi, résidences…")}
+        ${carte("#/budget", "💰", "Budget pour étudier loin", "Combien coûte une année d'université dans une autre ville, et comment la financer.")}
+        ${carte("#/recherche?type=aide", "🎓", "Bourses et aides", "Bourses d'admission, aide financière aux études, fondations, stages rémunérés.")}
       </div>`,
     });
   }
@@ -393,105 +395,5 @@
     rendre();
   }
 
-  /* ---------- Classement des universités ---------- */
-  const CRITERES = [
-    { k: "bourses", t: "Bourses", d: "Bourses d'admission et d'excellence" },
-    { k: "parcours", t: "Parcours", d: "Variété des programmes, régime coop, stages, flexibilité" },
-    { k: "decbac", t: "Chemin DEC-BAC", d: "Ententes et reconnaissance de crédits pour les DEC techniques" },
-    { k: "etranger", t: "Études à l'étranger", d: "Échanges, doubles diplômes, sessions internationales" },
-    { k: "ville", t: "Ville", d: "Correspondance avec les villes que tu préfères" },
-  ];
-
-  function classement(app) {
-    const st = Object.assign({ poids: { bourses: 3, parcours: 3, decbac: 2, etranger: 2, ville: 3 }, villes: [], langue: "", bac: "" }, store.get("classement", {}));
-    const maCote = (store.get("coteR", null) || {}).cote;
-
-    app.innerHTML = page({
-      titre: "Classement des universités",
-      intro: "Donne de l'importance (0 à 5) à chaque critère : le classement se recalcule instantanément. Les appréciations sont indicatives et basées sur l'offre publiée par chaque université.",
-      retour: RET,
-      contenu: `
-      <div class="grid2">
-        <div class="panel">
-          <h2 class="h3">Importance des critères</h2>
-          ${CRITERES.map((c) => `
-            <div class="slider-row">
-              <label for="w-${c.k}"><b>${c.t}</b><span class="hint">${c.d}</span></label>
-              <input type="range" id="w-${c.k}" data-k="${c.k}" min="0" max="5" step="1" value="${st.poids[c.k]}">
-              <output id="o-${c.k}">${st.poids[c.k]}</output>
-            </div>`).join("")}
-        </div>
-        <div class="panel">
-          <h2 class="h3">Mes préférences</h2>
-          <p class="small"><b>Villes souhaitées</b> (aucune = sans préférence)</p>
-          <div class="chips" id="villes">${CE.VILLES.map((v) => `<button class="chip ${st.villes.includes(v) ? "on" : ""}" data-v="${esc(v)}" aria-pressed="${st.villes.includes(v)}">${esc(v)}</button>`).join("")}</div>
-          <div class="form">
-            <label>Langue d'enseignement <select id="langue"><option value="">Peu importe</option><option value="fr" ${st.langue === "fr" ? "selected" : ""}>Français</option><option value="en" ${st.langue === "en" ? "selected" : ""}>Anglais</option></select></label>
-            <label>Programme visé <select id="bac"><option value="">Tous</option>${CE.BACS.map((b) => `<option value="${b.id}" ${b.id === st.bac ? "selected" : ""}>${esc(b.nom)}</option>`).join("")}</select>
-              <span class="hint">Seules les universités qui offrent ce programme sont classées.</span></label>
-          </div>
-        </div>
-      </div>
-      <div id="rang" class="ranking"></div>`,
-    });
-
-    const rang = app.querySelector("#rang");
-
-    function scoreVille(u) {
-      if (!st.villes.length) return 3;
-      return st.villes.includes(u.ville) ? 5 : 1;
-    }
-
-    function rendre() {
-      store.set("classement", st);
-      const b = st.bac ? bac(st.bac) : null;
-      const total = CRITERES.reduce((s, c) => s + st.poids[c.k], 0) || 1;
-      const liste = CE.UNIVERSITES
-        .filter((u) => !st.langue || u.langue === st.langue)
-        .filter((u) => !b || b.offres.some((o) => o.u === u.id))
-        .map((u) => {
-          const sc = Object.assign({}, u.scores, { ville: scoreVille(u) });
-          const s = CRITERES.reduce((acc, c) => acc + sc[c.k] * st.poids[c.k], 0) / total;
-          const offre = b ? b.offres.find((o) => o.u === u.id) : null;
-          return { u, sc, s: Math.round((s / 5) * 100), offre };
-        })
-        .sort((x, y) => y.s - x.s || x.u.nom.localeCompare(y.u.nom, "fr"));
-
-      rang.innerHTML = liste.length ? liste.map((r, i) => `
-        <details class="rank">
-          <summary>
-            <span class="pos">${i + 1}</span>
-            <span class="rank-name"><b>${esc(r.u.nom)}</b><span class="muted small">${esc(r.u.ville)} · ${r.u.langue === "fr" ? "français" : "anglais"} · coût de la vie ${esc(CE.COUT_VIE[r.u.ville])}</span>
-              ${r.offre ? `<span class="small">${esc(b.nom)} : ${r.offre.cote == null ? "pas de cote publiée" : `cote ≈ ${fmt(r.offre.cote, 1)}`}
-                ${maCote && r.offre.cote != null ? `<span class="badge ${statut(maCote, r.offre.cote).cls}">${statut(maCote, r.offre.cote).t}</span>` : ""}</span>` : ""}
-            </span>
-            <span class="rank-bars">${CRITERES.map((c) => `<span class="mini" title="${c.t} : ${r.sc[c.k]}/5"><span style="height:${r.sc[c.k] * 20}%"></span></span>`).join("")}</span>
-            <span class="score"><b>${r.s}</b><span class="muted small">/100</span></span>
-          </summary>
-          <div class="rank-body">
-            <ul>${CRITERES.map((c) => `<li><b>${c.t} (${r.sc[c.k]}/5)</b> : ${c.k === "ville"
-              ? (st.villes.length ? (st.villes.includes(r.u.ville) ? "dans une ville que tu as choisie." : "hors de tes villes préférées.") : "aucune préférence indiquée.")
-              : esc(r.u.notes[c.k])}</li>`).join("")}</ul>
-            <a href="${r.u.site}" target="_blank" rel="noopener">Site de l'admission →</a>
-          </div>
-        </details>`).join("") : `<p class="muted">Aucune université ne correspond à ces filtres.</p>`;
-    }
-
-    app.querySelectorAll('input[type="range"]').forEach((r) => r.oninput = () => {
-      st.poids[r.dataset.k] = Number(r.value);
-      app.querySelector("#o-" + r.dataset.k).textContent = r.value;
-      rendre();
-    });
-    app.querySelector("#villes").onclick = (e) => {
-      const v = e.target.dataset.v; if (!v) return;
-      st.villes = st.villes.includes(v) ? st.villes.filter((x) => x !== v) : [...st.villes, v];
-      e.target.classList.toggle("on"); e.target.setAttribute("aria-pressed", st.villes.includes(v));
-      rendre();
-    };
-    app.querySelector("#langue").onchange = (e) => { st.langue = e.target.value; rendre(); };
-    app.querySelector("#bac").onchange = (e) => { st.bac = e.target.value; rendre(); };
-    rendre();
-  }
-
-  window.CEGEP = { accueil, coteR, prevision, interets, admissibilite, classement, _coteCours: coteCours };
+  window.CEGEP = { accueil, coteR, prevision, interets, admissibilite, statut, _coteCours: coteCours };
 })();

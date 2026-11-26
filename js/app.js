@@ -21,6 +21,15 @@
           <ul><li>Calculateur de cote R</li><li>Prévision de cote R</li><li>Test d'intérêts universitaire</li><li>Où aller avec ma cote R</li><li>Classement des universités</li></ul>
           <span class="btn">Commencer</span>
         </a>
+      </div>
+      <h2 class="section-titre">Pour tout le monde</h2>
+      <div class="cards">
+        <a class="card" href="#/budget"><span class="card-ico" aria-hidden="true">💰</span><h2>Budget loin de chez soi</h2>
+          <p>Loyer, épicerie, retours à la maison, frais de scolarité : combien coûte une année d'études dans une autre ville ?</p></a>
+        <a class="card" href="#/recherche"><span class="card-ico" aria-hidden="true">🔎</span><h2>Écoles, bourses et aides</h2>
+          <p>Cherche dans les fiches des universités et des cégeps, les bourses d'admission, l'aide financière et les emplois étudiants.</p></a>
+        <a class="card" href="#/compte"><span class="card-ico" aria-hidden="true">👤</span><h2>Mon compte</h2>
+          <p>Connecte-toi pour retrouver tes résultats, ta cote R et ton budget sur tous tes appareils.</p></a>
       </div>`;
   }
 
@@ -37,6 +46,9 @@
     "/cegep/interets": CEGEP.interets,
     "/cegep/admissibilite": CEGEP.admissibilite,
     "/cegep/classement": CEGEP.classement,
+    "/budget": BUDGET.budget,
+    "/recherche": RECHERCHE.recherche,
+    "/compte": COMPTE.vue,
   };
 
   let dernier = null;

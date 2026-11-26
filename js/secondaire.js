@@ -16,6 +16,8 @@
         ${carte("#/secondaire/personnalite", "🧩", "Test de personnalité", "20 énoncés sur ta façon d'être et les milieux où tu t'épanouiras.", fini("sec-perso"))}
         ${carte("#/secondaire/parcours", "🗺️", "Parcours possibles", "Préuniversitaire, technique, DEC-BAC, DEP, Tremplin DEC : vois tous les chemins.")}
         ${carte("#/secondaire/prealables", "✅", "Préalables par cégep", "Les cours du secondaire exigés pour chaque programme, dans chaque cégep.")}
+        ${carte("#/budget", "💰", "Étudier au cégep loin de chez toi", "Logement, épicerie, retours à la maison : estime ton budget pour une année.")}
+        ${carte("#/recherche?type=cegep", "🔎", "Trouver un cégep", "Cherche un cégep par ville, région ou programme.")}
       </div>`,
     });
   }
