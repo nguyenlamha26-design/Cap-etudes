@@ -162,35 +162,65 @@
 
   function nouvelleSim(p) {
     return { profil: p.profil, semaine: 0, energie: 75, moral: 70, argent: num(p.economies) || 0, prepSum: 0, prepN: 0, bonus: 0, sportFixe: 0,
-      notes: {}, quiz: [], hist: [], journal: [], evt: null, choix: null, stageEte: false, fini: false, vus: [] };
+      notes: {}, quiz: [], hist: [], journal: [], evt: null, choix: null, stageEte: false, fini: false, vus: [], focus: "equilibre", suites: [] };
   }
 
+  /* Imprévu de la semaine : d'abord une suite prévue par un choix passé, sinon un tirage
+     parmi les imprévus permis (niveau, logement, emploi, semaine de la session). */
   function tirerEvenement(s, p) {
     const w = s.semaine + 1;
     if (w === 1) return "rentree";
     if (w === V.relache) return "relache";
-    if (Math.random() > 0.7) return null;
-    const pool = V.evenements.filter((e) => !s.vus.includes(e.id) && (!e.si || e.si(p)) && (!e.rare || Math.random() < 0.35));
+    s.suites = s.suites || [];
+    const i = s.suites.findIndex((x) => x.w <= w);
+    if (i >= 0) return s.suites.splice(i, 1)[0].id;
+    if (Math.random() > 0.85) return null;
+    const pool = V.evenements.filter((e) => !e.seulementSuite && !s.vus.includes(e.id) && (!e.si || e.si(p))
+      && (!e.de || w >= e.de) && (!e.a || w <= e.a) && (!e.rare || Math.random() < 0.35));
     return pool.length ? pool[Math.floor(Math.random() * pool.length)].id : null;
   }
   const evtDef = (id) => SPECIAUX[id] || V.evenements.find((e) => e.id === id);
   const noteDe = (prep, energie) => clamp(Math.round(48 + 0.42 * prep + alea(-5, 5) - (energie < 25 ? 6 : 0)), 0, 100);
 
+  /* Additionne deux ensembles d'effets (les nombres s'additionnent, le reste est remplacé). */
+  function sommer(a, b) {
+    const r = Object.assign({}, a);
+    Object.entries(b || {}).forEach(([k, v]) => { r[k] = typeof v === "number" && typeof r[k] === "number" ? r[k] + v : v; });
+    return r;
+  }
+
+  /* Vit une semaine. Retourne les réglages réels de la semaine (avec la priorité et l'imprévu) pour l'animation. */
   function vivreSemaine(s, p) {
     const pr = profil(p), w = s.semaine + 1, relache = w === V.relache;
     const ev = s.evt ? evtDef(s.evt) : null;
     const idx = ev ? (s.choix ?? Math.max(0, ev.choix.findIndex((c) => c.sage))) : null;
-    const e = ev ? ev.choix[idx].e : {};
+    const ch = ev ? ev.choix[idx] : null;
+    let eff = ch ? Object.assign({}, ch.e) : {};
+    let issue = null;
+    if (ch && ch.risque) {
+      const ok = Math.random() < ch.risque.p;
+      issue = Object.assign({ ok }, ok ? ch.risque.ok : ch.risque.ko);
+      eff = sommer(eff, issue.e);
+    }
+    const fo = V.focus[s.focus] || V.focus.equilibre;
+    const e = sommer(eff, fo.e);
+
     const cours = relache ? 0 : heuresCours(pr), besoin = relache ? 0 : heuresPerso(pr);
-    const etu = relache ? Math.min(etude(p), 6) : etude(p);
-    const travail = p.travail + (e.travail || 0);
-    const sport = p.sport + s.sportFixe;
-    const total = cours + etu + travail + (relache ? 0 : trajetH(p)) + routine(p) + p.sommeil * 7 + sport + p.sorties + (e.temps || 0);
-    const sommeil = p.sommeil - Math.max(0, total - 168) / 7;
+    const etu = Math.max(0, (relache ? Math.min(etude(p), 6) : etude(p)) + (e.etude || 0));
+    const travail = Math.max(0, p.travail + (e.travail || 0));
+    const sport = Math.max(0, p.sport + s.sportFixe + (e.sport || 0));
+    const sorties = Math.max(0, p.sorties + (e.sorties || 0));
+    const dodo = clamp(p.sommeil + (e.sommeil || 0), 4, 11);
+    const total = cours + etu + travail + (relache ? 0 : trajetH(p)) + routine(p) + dodo * 7 + sport + sorties + (e.temps || 0);
+    const sommeil = dodo - Math.max(0, total - 168) / 7;
     const charge = cours + etu + travail;
     if (e.sportFixe) s.sportFixe += e.sportFixe;
     if (e.bonus) s.bonus += e.bonus;
     if (e.stageEte) s.stageEte = true;
+    if (e.suite) {
+      const [id, d] = Array.isArray(e.suite) ? e.suite : [e.suite, 1];
+      s.suites = (s.suites || []).concat({ id, w: w + d });
+    }
 
     s.energie += (sommeil - 7) * 5 + sport * 1.2 - Math.max(0, travail - 12) - Math.max(0, charge - 50) * 0.6 + (e.energie || 0);
     s.energie = clamp(s.energie + (70 - s.energie) * 0.15, 0, 100);
@@ -202,29 +232,33 @@
       s.prepSum += prep; s.prepN++;
     } else if (e.prep) { s.prepSum += e.prep * s.prepN / 10; }
 
-    s.moral += (p.sorties - 4) * 1.6 + sport * 0.8 - Math.max(0, charge - 50) * 0.7 - (s.argent < 0 ? 8 : 0) - (s.energie < 30 ? 5 : 0) + (e.moral || 0);
+    s.moral += (sorties - 4) * 1.6 + sport * 0.8 - Math.max(0, charge - 50) * 0.7 - (s.argent < 0 ? 8 : 0) - (s.energie < 30 ? 5 : 0) + (e.moral || 0);
     s.moral = clamp(s.moral + (65 - s.moral) * 0.12, 0, 100);
 
     const frais = w === 1 ? (CE.FRAIS[p.niveau].scolarite + CE.FRAIS[p.niveau].materiel) / 2 : 0;
     const revenu = travail * CE.SALAIRE_MIN * 0.87 + (num(p.parents) || 0) * 12 / 52;
-    s.argent = Math.round(s.argent + revenu - depensesSemaine(p, p.sorties) - frais + (e.argent || 0));
+    s.argent = Math.round(s.argent + revenu - depensesSemaine(p, sorties) - frais + (e.argent || 0));
 
     const lignes = [];
-    if (ev) lignes.push(`${ev.t} → <b>${esc(ev.choix[idx].t)}</b>`);
+    if (fo !== V.focus.equilibre) lignes.push(`Priorité de la semaine : ${fo.ico} <b>${esc(fo.nom)}</b>`);
+    if (ev) lignes.push(`${esc(ev.t)} → <b>${esc(ch.t)}</b>`);
+    if (issue) lignes.push(`🎲 ${esc(issue.m)}`);
+    if (ch && ch.note) lignes.push(esc(ch.note));
     if (frais) lignes.push(`Frais de session et matériel payés : ${fmt(frais, 0)} $.`);
     const moy = s.prepN ? s.prepSum / s.prepN : 0;
     if (ev && ev.quiz) { const q = noteDe(prep ?? moy, s.energie); s.quiz.push(q); lignes.push(`Résultat du quiz : <b>${q} %</b>.`); }
     if (w === V.examens[0]) { s.notes.mi = noteDe(moy, s.energie); lignes.push(`📝 Examens de mi-session : moyenne de <b>${s.notes.mi} %</b>.`); }
     if (w === V.examens[1]) { s.notes.fin = noteDe(moy, s.energie); lignes.push(`📝 Examens finaux : moyenne de <b>${s.notes.fin} %</b>.`); }
-    if (sommeil < p.sommeil - 0.2) lignes.push(`Semaine trop chargée : tu as dormi environ ${fmt(sommeil, 1)} h par nuit.`);
+    if (sommeil < dodo - 0.2) lignes.push(`Semaine trop chargée : tu as dormi environ ${fmt(sommeil, 1)} h par nuit.`);
     if (relache) lignes.push("Relâche : aucun cours.");
     if (!lignes.length) lignes.push("Semaine normale : cours, travaux et routine.");
-    s.journal.unshift({ w, lignes, evt: ev ? s.evt : null, choix: idx });
+    s.journal.unshift({ w, lignes, evt: ev ? s.evt : null, choix: idx, eff, issue: issue ? { ok: issue.ok, m: issue.m } : null });
     s.hist.push({ w, energie: Math.round(s.energie), moral: Math.round(s.moral), prep: prep == null ? null : Math.round(prep), argent: s.argent });
     if (ev) s.vus.push(s.evt);
     s.semaine = w; s.evt = null; s.choix = null;
     if (w >= V.semaines) s.fini = true;
     else s.evt = tirerEvenement(s, p);
+    return Object.assign({}, p, { etude: etu, travail, sport: Math.max(0, p.sport + (e.sport || 0)) + s.sportFixe, sorties });
   }
 
   /* Résultat scolaire : cote R estimée au cégep, lettre et moyenne cumulative à l'université. */
@@ -401,6 +435,9 @@
     let evtFait = !o.evt, examFait = !o.epreuve, tOuvert = 0;
     const bus = new Set(), vehicules = [];
 
+    strip.querySelectorAll(".js-barre").forEach((el, jj) => {
+      el.innerHTML = blocs.filter((x) => x.j === jj).map((x) => `<i class="t-${x.type}" style="left:${((x.h - 7) / 16) * 100}%;width:${(x.n / 16) * 100}%"></i>`).join("");
+    });
     ctrl.hidden = false; tete.hidden = false;
     scene.classList.add("anime");
     const majCtrl = () => {
@@ -461,7 +498,8 @@
       over.innerHTML = `<div class="sc-evt"><span class="sc-evt-ico">${ev.ico}</span><div>
         <small>${JOURS_COURTS[j]} · imprévu</small><b>${esc(ev.t)}</b>
         <p>Ton choix : <b>${esc(ev.c.t)}</b></p>
-        <div class="chips">${chip(e.energie, "⚡")}${chip(e.moral, "🙂")}${chip(e.argent, "💵", " $")}${chip(e.prep, "📚")}${e.travail ? `<span class="chip neu">${e.travail > 0 ? "+" : "−"}${Math.abs(e.travail)} h d'emploi 💼</span>` : ""}${e.temps ? `<span class="chip neu">${e.temps} h de ton temps ⏱️</span>` : ""}</div>
+        ${ev.c.issue ? `<p class="issue ${ev.c.issue.ok ? "ok" : "ko"}">🎲 ${esc(ev.c.issue.m)}</p>` : ""}
+        <div class="chips">${chip(e.energie, "⚡")}${chip(e.moral, "🙂")}${chip(e.argent, "💵", " $")}${chip(e.prep, "📚")}${e.travail ? `<span class="chip neu">${e.travail > 0 ? "+" : "−"}${Math.abs(e.travail)} h d'emploi 💼</span>` : ""}${e.temps ? `<span class="chip neu">${e.temps} h de ton temps ⏱️</span>` : ""}${e.etude ? `<span class="chip neu">${e.etude > 0 ? "+" : "−"}${Math.abs(e.etude)} h d'étude 📚</span>` : ""}${e.sport ? `<span class="chip neu">+${e.sport} h de sport ⚽</span>` : ""}${e.stageEte ? `<span class="chip pos">Stage d'été 🚀</span>` : ""}</div>
         <small class="sc-continuer">Clique pour continuer</small></div></div>`;
       over.classList.add("on");
       bulle.textContent = ev.ico;
@@ -656,6 +694,12 @@
     </div>`;
   }
 
+  function focusHtml(s) {
+    const k = V.focus[s.focus] ? s.focus : "equilibre", fo = V.focus[k];
+    return `<div class="panel focus"><div class="focus-tete"><b>Ta priorité cette semaine</b><span class="small muted">${esc(fo.d)}</span></div>
+      <div class="focus-choix">${Object.entries(V.focus).map(([c, f]) => `<button type="button" class="focus-btn ${c === k ? "on" : ""}" data-focus="${c}" aria-pressed="${c === k}"><span>${f.ico}</span>${esc(f.nom)}</button>`).join("")}</div></div>`;
+  }
+
   function simulationHtml(s, p, avatar, transition) {
     if (!s) {
       return `<div class="panel sim-debut">
@@ -687,8 +731,9 @@
       </div>`}
       ${sceneHtml(s, p, avatar)}
       ${jauges(s, a)}
-      ${!s.fini && ev ? `<div class="panel evt ${transition ? "pop" : ""}"><span class="evt-ico" aria-hidden="true">${EVT_ICO[s.evt] || "⚠️"}</span><div><b>${esc(ev.t)}</b>
+      ${!s.fini && ev ? `<div class="panel evt ${transition ? "pop" : ""}"><span class="evt-ico" aria-hidden="true">${EVT_ICO[s.evt] || ev.ico || "⚠️"}</span><div><b>${esc(ev.t)}</b>
         <div class="row-actions">${ev.choix.map((c, i) => `<button class="btn ${s.choix === i ? "" : "ghost"} small" data-choix="${i}">${esc(c.t)}</button>`).join("")}</div></div></div>` : ""}
+      ${!s.fini ? focusHtml(s) : ""}
       ${!s.fini ? `
       ${b.libre < 0 ? `<p class="badge warn">Ta semaine dépasse 168 heures de ${fmt(-b.libre, 1)} h : tu vas manquer de sommeil.</p>` : ""}
       <div class="row-actions sim-actions">
@@ -790,6 +835,8 @@
         if (stopAnim) return;
         const av = e.target.closest("[data-avatar]");
         if (av) { avatar = av.dataset.avatar; store.set("vie:avatar", avatar); maj(); return; }
+        const fo = e.target.closest("[data-focus]");
+        if (fo && s) { s.focus = fo.dataset.focus; maj(); return; }
         const c = e.target.closest("[data-choix]");
         if (c) { s.choix = Number(c.dataset.choix); maj(); return; }
         const a = e.target.closest("[data-act]"); if (!a) return;
@@ -805,7 +852,7 @@
         if (a.dataset.act === "semaine" && s && !s.fini) {
           const avant = instantane();
           const quiz = s.evt && evtDef(s.evt).quiz;
-          vivreSemaine(s, p);
+          const pSem = vivreSemaine(s, p);
           const w = s.semaine;
           const epreuve = w === V.examens[0] ? { t: "Examens de mi-session", n: s.notes.mi }
             : w === V.examens[1] ? { t: "Examens finaux", n: s.notes.fin }
@@ -814,9 +861,10 @@
           const scene = vue.querySelector("#scene");
           if (scene) { const r = scene.getBoundingClientRect(); if (r.top < 80 || r.bottom > innerHeight) window.scrollBy({ top: r.top - 90, behavior: "smooth" }); }
           const jr = s.journal[0], evd = jr.evt ? evtDef(jr.evt) : null;
-          const evt = evd ? { id: jr.evt, ico: EVT_ICO[jr.evt] || "⚠️", t: evd.t, c: evd.choix[jr.choix] || evd.choix[0] } : null;
+          const ch = evd ? evd.choix[jr.choix] || evd.choix[0] : null;
+          const evt = evd ? { id: jr.evt, ico: EVT_ICO[jr.evt] || evd.ico || "⚠️", t: evd.t, c: { t: ch.t, e: jr.eff || ch.e, issue: jr.issue } } : null;
           avant.live = animOn();
-          stopAnim = animerSemaine(vue, { s, p, w, avant, epreuve, evt, vitesse: store.get("vie:vitesse", 2), fini: () => { stopAnim = null; maj({ avant }); } });
+          stopAnim = animerSemaine(vue, { s, p: pSem, w, avant, epreuve, evt, vitesse: store.get("vie:vitesse", 2), fini: () => { stopAnim = null; maj({ avant }); } });
         }
       };
     }

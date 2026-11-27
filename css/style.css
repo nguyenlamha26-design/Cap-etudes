@@ -802,3 +802,11 @@ a.tag:hover { filter: brightness(1.15); }
 #vue:not(.jeu-anim) .nuage, #vue:not(.jeu-anim) .meteo i, #vue:not(.jeu-anim) .fx, #vue:not(.jeu-anim) .delta, #vue:not(.jeu-anim) .evt.pop,
 #vue:not(.jeu-anim) .trophee, #vue:not(.jeu-anim) .copie, #vue:not(.jeu-anim) .journal li.neuf { animation: none !important; }
 #vue:not(.jeu-anim) .delta { opacity: 1; }
+.focus { padding: .8rem 1rem; }
+.focus-tete { display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: baseline; margin-bottom: .55rem; }
+.focus-choix { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: .45rem; }
+.focus-btn { display: flex; align-items: center; gap: .4rem; padding: .5rem .65rem; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass); color: var(--text); font: inherit; font-size: .88rem; font-weight: 650; cursor: pointer; transition: transform .15s, border-color .15s, background .15s; }
+.focus-btn span { font-size: 1.25rem; }
+.focus-btn:hover { transform: translateY(-2px); }
+.focus-btn.on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 18%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent); }
+.sc-evt .issue { font-weight: 700; } .sc-evt .issue.ok { color: var(--ok); } .sc-evt .issue.ko { color: var(--ko); }
