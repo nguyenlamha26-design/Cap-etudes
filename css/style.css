@@ -113,7 +113,7 @@ h3, .h3 { font-size: 1.05rem; margin-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   .blob { animation: none; }
   html { scroll-behavior: auto; }
-  * { transition: none !important; }
+  :not(.jeu-anim):not(.jeu-anim *) { transition: none !important; }
 }
 
 /* ---------- Verre ---------- */
@@ -677,65 +677,114 @@ a.tag:hover { filter: brightness(1.15); }
 .avatar-choix { font-size: 2rem; width: 3.6rem; height: 3.6rem; border-radius: 16px; border: 2px solid var(--glass-border); background: var(--glass); cursor: pointer; transition: transform .15s, border-color .15s; }
 .avatar-choix:hover { transform: translateY(-3px) scale(1.06); }
 .avatar-choix.on { border-color: var(--brand); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 25%, transparent); }
-.scene { position: relative; height: 230px; border-radius: 20px; overflow: hidden; margin: .8rem 0; border: 1px solid var(--glass-border); user-select: none;
-  background-color: #7ec8f2; background-image: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.35)); transition: background-color .6s; }
-.scene.anime { cursor: pointer; }
-.scene.m-matin { background-color: #f6b98a; } .scene.m-jour { background-color: #7ec8f2; }
-.scene.m-soir { background-color: #e9795a; } .scene.m-nuit { background-color: #1d2346; }
-.scene .ciel { position: absolute; inset: 0; pointer-events: none; }
-.astre { position: absolute; font-size: 2.2rem; transition: top .8s, left .8s, opacity .6s; }
-.soleil { left: 12%; top: 50%; opacity: 1; }
-.m-matin .soleil { left: 10%; top: 38%; } .m-jour .soleil { left: 46%; top: 8%; } .m-soir .soleil { left: 82%; top: 38%; }
-.m-nuit .soleil { opacity: 0; top: 70%; }
-.lune { left: 70%; top: 10%; opacity: 0; } .m-nuit .lune { opacity: 1; }
-.etoiles { position: absolute; left: 8%; right: 8%; top: 12%; color: #fff; letter-spacing: 3.5rem; opacity: 0; transition: opacity .6s; font-size: .8rem; white-space: nowrap; }
-.m-nuit .etoiles { opacity: .8; }
-.nuage { position: absolute; font-size: 1.8rem; opacity: .85; animation: nuage 38s linear infinite; }
-.n1 { top: 14%; left: -10%; } .n2 { top: 30%; left: -10%; font-size: 1.3rem; animation-duration: 55s; animation-delay: -20s; }
-.m-nuit .nuage { opacity: .25; }
-@keyframes nuage { to { transform: translateX(120vw); } }
-.hud { position: absolute; top: .6rem; left: .7rem; display: flex; gap: .5rem; align-items: center; z-index: 3; }
-.hud b, .hud span:not(:empty) { background: rgba(0,0,0,.45); color: #fff; padding: .25rem .65rem; border-radius: 999px; font-size: .82rem; backdrop-filter: blur(6px); }
-.sol { position: absolute; left: 0; right: 0; bottom: 0; height: 30%; background: linear-gradient(#6cc36a, #3f9b4d); transition: filter .6s; }
-.m-nuit .sol, .m-nuit .lieu { filter: brightness(.55); } .m-soir .sol { filter: brightness(.85); }
-.lieu { position: absolute; bottom: 22%; transform: translateX(-50%); display: grid; justify-items: center; z-index: 1; transition: filter .6s; }
-.lieu span { font-size: 2.6rem; line-height: 1; }
-.lieu small { font-size: .7rem; font-weight: 700; color: #fff; background: rgba(0,0,0,.35); border-radius: 6px; padding: 0 .35rem; margin-top: .15rem; }
-.avatar { position: absolute; bottom: 7%; transform: translateX(-50%); display: grid; justify-items: center; z-index: 2; transition: left .25s ease-in-out; }
-.avatar .perso { font-size: 2.6rem; line-height: 1; display: inline-block; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); }
-.avatar.gauche .perso { transform: scaleX(-1); }
-.avatar.marche .perso { animation: marche .28s ease-in-out infinite alternate; }
-.avatar.gauche.marche .perso { animation-name: marche-g; }
-@keyframes marche { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-5px) rotate(4deg); } }
-@keyframes marche-g { from { transform: scaleX(-1) translateY(0) rotate(-4deg); } to { transform: scaleX(-1) translateY(-5px) rotate(4deg); } }
-.avatar .bulle { background: #fff; border-radius: 14px; padding: .1rem .4rem; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(0,0,0,.2); margin-bottom: .15rem; position: relative; }
-.avatar .bulle::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-top-color: #fff; border-bottom: 0; }
-.avatar .humeur { position: absolute; right: -.9rem; bottom: .2rem; font-size: 1.1rem; }
-.fx { position: absolute; bottom: 48%; transform: translateX(-50%); font-weight: 800; font-size: 1rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.5); z-index: 4; animation: fx 1s ease-out forwards; pointer-events: none; }
-@keyframes fx { from { opacity: 0; transform: translate(-50%, 10px) scale(.7); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.1); } to { opacity: 0; transform: translate(-50%, -45px) scale(1); } }
-.sc-passer { position: absolute; top: .55rem; right: .6rem; z-index: 7; background: rgba(0,0,0,.45) !important; color: #fff !important; border-color: transparent !important; }
-.sc-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10,12,30,.55); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 6; }
-.sc-overlay.on { opacity: 1; }
-.copie { position: relative; background: #fffdf5; color: #222; border-radius: 14px; padding: 1rem 2.2rem; display: grid; justify-items: center; gap: .15rem; box-shadow: 0 10px 30px rgba(0,0,0,.35); animation: pop .4s cubic-bezier(.2,1.6,.4,1); }
+.anim-toggle { display: inline-flex; align-items: center; gap: .35rem; font-size: .88rem; cursor: pointer; }
+
+.scene-wrap { margin: .8rem 0; }
+.scene { --nuit: 0; --herbe1: #7fcf6a; --herbe2: #4ea64f; --f-saison: saturate(1);
+  position: relative; height: 300px; border-radius: 20px 20px 0 0; overflow: hidden; border: 1px solid var(--glass-border); border-bottom: 0; user-select: none; isolation: isolate; }
+.scene.s-automne { --herbe1: #a8c25a; --herbe2: #7a9a3e; --f-saison: hue-rotate(-75deg) saturate(1.4); }
+.scene.s-novembre { --herbe1: #9aa26a; --herbe2: #6f7a4a; --f-saison: saturate(.35) sepia(.4); }
+.scene.s-hiver { --herbe1: #f4f8ff; --herbe2: #d6e2f0; --f-saison: saturate(.6) brightness(1.1); }
+.scene .ciel { position: absolute; inset: 0; z-index: -2; }
+.etoiles { position: absolute; inset: 0; opacity: var(--nuit); z-index: -1; pointer-events: none; }
+.etoiles i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px #fff; }
+.etoiles i:nth-child(3n) { width: 2px; height: 2px; }
+.astre { position: absolute; font-size: 2.3rem; line-height: 1; transform: translate(-50%, -50%); z-index: -1; pointer-events: none; }
+#sc-soleil { filter: drop-shadow(0 0 14px rgba(255, 200, 60, .9)); }
+#sc-lune { filter: drop-shadow(0 0 10px rgba(220, 230, 255, .8)); }
+.nuage { position: absolute; left: -12%; font-size: 2rem; opacity: calc(.9 - .6 * var(--nuit)); animation: nuage 42s linear infinite; z-index: -1; }
+.n1 { top: 10%; } .n2 { top: 24%; font-size: 1.4rem; animation-duration: 60s; animation-delay: -25s; } .n3 { top: 6%; font-size: 1.1rem; animation-duration: 75s; animation-delay: -50s; }
+.meteo-pluie .nuage, .meteo-neige .nuage { filter: grayscale(1) brightness(.8); }
+@keyframes nuage { to { left: 112%; } }
+.collines { position: absolute; left: -5%; right: -5%; bottom: 26%; height: 34%;
+  background: radial-gradient(60% 90% at 20% 100%, var(--herbe1) 60%, transparent 61%), radial-gradient(55% 80% at 75% 100%, var(--herbe1) 60%, transparent 61%), linear-gradient(transparent 55%, var(--herbe2) 55%);
+  filter: brightness(calc(1 - .55 * var(--nuit))); }
+.arbre { position: absolute; bottom: 29%; transform: translateX(-50%); font-size: 2.4rem; line-height: 1; filter: var(--f-saison) brightness(calc(1 - .5 * var(--nuit))); }
+.lieu { position: absolute; bottom: 29%; transform: translateX(-50%); display: flex; flex-direction: column-reverse; align-items: center; }
+.lieu span { font-size: 3.1rem; line-height: 1; position: relative; filter: brightness(calc(1 - .4 * var(--nuit))); }
+.lieu small { font-size: .68rem; font-weight: 700; color: #fff; background: rgba(0, 0, 0, .4); border-radius: 6px; padding: 0 .35rem; margin-bottom: .15rem; position: relative; }
+.lumiere { position: absolute; left: 50%; top: 40%; width: 120px; height: 90px; transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgba(255, 210, 110, .75), transparent); opacity: var(--nuit); pointer-events: none; }
+.lampe { position: absolute; bottom: 27%; width: 3px; height: 54px; background: #39404f; transform: translateX(-50%); }
+.lampe i { position: absolute; top: -5px; left: -4px; width: 11px; height: 7px; border-radius: 4px 4px 2px 2px; background: #ffe7a3; opacity: calc(.25 + .75 * var(--nuit)); box-shadow: 0 0 calc(30px * var(--nuit)) calc(12px * var(--nuit)) rgba(255, 214, 120, .65); }
+.trottoir { position: absolute; left: 0; right: 0; bottom: 22%; height: 7%; background: linear-gradient(#c9c4bb, #a9a39a); filter: brightness(calc(1 - .5 * var(--nuit))); }
+.s-hiver .trottoir { background: linear-gradient(#f2f5fa, #cfd8e3); }
+.route { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: #4a4e57; filter: brightness(calc(1 - .45 * var(--nuit))); }
+.route .ligne { position: absolute; left: 0; right: 0; top: 50%; height: 3px; background: repeating-linear-gradient(90deg, #f5d76e 0 22px, transparent 22px 44px); }
+.vehicule { position: absolute; bottom: 4%; font-size: 2rem; line-height: 1; transform-origin: center; z-index: 3; filter: brightness(calc(1 - .3 * var(--nuit))); }
+.meteo { position: absolute; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+.meteo i { position: absolute; top: -8%; font-style: normal; animation: tombe linear infinite; }
+.meteo-pluie .meteo i { width: 2px; height: 16px; background: linear-gradient(transparent, rgba(210, 225, 255, .8)); }
+.meteo-neige .meteo i { color: #fff; font-size: .8rem; animation-name: neige; }
+.meteo-feuilles .meteo i { font-size: .95rem; animation-name: feuille; }
+@keyframes tombe { to { top: 105%; transform: translateX(-30px); } }
+@keyframes neige { 50% { transform: translateX(18px); } to { top: 105%; transform: translateX(-10px); } }
+@keyframes feuille { 33% { transform: translateX(30px) rotate(120deg); } 66% { transform: translateX(-10px) rotate(240deg); } to { top: 105%; transform: translateX(40px) rotate(360deg); } }
+
+.joueur { position: absolute; bottom: 23%; transform: translateX(-50%); display: grid; justify-items: center; z-index: 5; transition: opacity .3s; }
+.joueur.dort { opacity: 0; }
+.joueur .perso { font-size: 2.6rem; line-height: 1; display: inline-block; filter: drop-shadow(0 4px 2px rgba(0, 0, 0, .35)) brightness(calc(1 - .25 * var(--nuit))); }
+.joueur .bulle { background: #fff; border-radius: 14px; padding: .1rem .45rem; font-size: 1.15rem; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); margin-bottom: .2rem; position: relative; min-width: 1.9rem; text-align: center; }
+.joueur .bulle::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-top-color: #fff; border-bottom: 0; }
+.joueur .humeur { position: absolute; right: -1rem; bottom: .1rem; font-size: 1.15rem; }
+.fx { position: absolute; bottom: 52%; transform: translateX(-50%); font-size: 1.15rem; z-index: 6; animation: fx 1.4s ease-out forwards; pointer-events: none; }
+.fx.gros { font-size: 2rem; }
+.fx.zz { bottom: 46%; font-size: 1.3rem; animation-name: zz; }
+@keyframes fx { from { opacity: 0; transform: translate(-50%, 10px) scale(.6); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } to { opacity: 0; transform: translate(-50%, -60px) scale(1); } }
+@keyframes zz { from { opacity: 0; transform: translate(-50%, 0) scale(.5); } 30% { opacity: 1; } to { opacity: 0; transform: translate(20px, -70px) scale(1.3); } }
+
+.hud { position: absolute; top: .6rem; left: .7rem; right: 11rem; display: flex; gap: .4rem; align-items: center; z-index: 7; }
+.hud b, .hud-meteo { background: rgba(0, 0, 0, .5); color: #fff; padding: .25rem .7rem; border-radius: 999px; font-size: .82rem; backdrop-filter: blur(6px); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc-ctrl { position: absolute; top: .55rem; right: .6rem; z-index: 9; display: flex; gap: 2px; background: rgba(0, 0, 0, .5); border-radius: 999px; padding: 3px; backdrop-filter: blur(6px); }
+.sc-ctrl[hidden] { display: none; }
+.sc-ctrl button { border: 0; background: transparent; color: #fff; font: inherit; font-size: .8rem; font-weight: 700; min-width: 2rem; height: 1.8rem; border-radius: 999px; cursor: pointer; }
+.sc-ctrl button:hover { background: rgba(255, 255, 255, .15); }
+.sc-ctrl button.on { background: #fff; color: #222; }
+.sc-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(10, 12, 30, .55); opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 8; padding: 1rem; }
+.sc-overlay.on { opacity: 1; pointer-events: auto; cursor: pointer; }
+.sc-evt { display: flex; gap: .9rem; align-items: flex-start; max-width: 30rem; background: var(--bg-2, #1b1f3a); color: var(--text, #fff); border: 1px solid var(--glass-border); border-radius: 16px; padding: .9rem 1.1rem; box-shadow: 0 14px 40px rgba(0, 0, 0, .45); animation: pop .45s cubic-bezier(.2, 1.5, .4, 1); }
+.sc-evt b { display: block; } .sc-evt p { margin: .35rem 0; font-size: .9rem; }
+.sc-evt small { color: var(--muted); font-size: .74rem; }
+.sc-evt-ico { font-size: 2.6rem; line-height: 1; animation: secoue .7s .3s; }
+.chips { display: flex; flex-wrap: wrap; gap: .3rem; margin: .2rem 0 .3rem; }
+.chip { font-size: .76rem; font-weight: 800; padding: .1rem .5rem; border-radius: 999px; color: #fff; }
+.chip.pos { background: var(--ok); } .chip.neg { background: var(--ko); } .chip.neu { background: var(--glass-strong); color: var(--text); }
+.sc-continuer { display: block; margin-top: .2rem; }
+.copie { position: relative; background: #fffdf5; color: #222; border-radius: 14px; padding: 1rem 2.2rem; display: grid; justify-items: center; gap: .15rem; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); animation: pop .4s cubic-bezier(.2, 1.6, .4, 1); }
 .copie-ico { font-size: 2rem; } .copie .note { font-size: 2.4rem; font-variant-numeric: tabular-nums; }
 .tampon { position: absolute; right: -1.6rem; bottom: -.6rem; padding: .2rem .6rem; border: 3px solid; border-radius: 8px; font-weight: 900; text-transform: uppercase; font-size: .85rem; transform: rotate(-14deg) scale(2.2); opacity: 0; background: #fffdf5; }
 .tampon.ok { color: #1a9a52; } .tampon.ko { color: #d33a3a; }
 .tampon.on { animation: tampon .35s ease-in forwards; }
 @keyframes tampon { to { opacity: 1; transform: rotate(-14deg) scale(1); } }
 @keyframes pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+@keyframes secoue { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg) scale(1.15); } 75% { transform: rotate(12deg) scale(1.1); } }
+
+.jours-strip { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); background: var(--glass); border: 1px solid var(--glass-border); border-radius: 0 0 16px 16px; overflow: hidden; }
+.js-jour { padding: .3rem .35rem .4rem; border-left: 1px solid var(--glass-border); transition: background .3s, opacity .3s; }
+.js-jour:first-child { border-left: 0; }
+.js-jour b { font-size: .72rem; color: var(--muted); }
+.js-jour.en-cours { background: color-mix(in srgb, var(--brand) 14%, transparent); }
+.js-jour.en-cours b { color: var(--text); }
+.js-jour.fait { opacity: .55; }
+.js-jour.fait b::after { content: " ✓"; color: var(--ok); }
+.js-barre { position: relative; height: 10px; border-radius: 4px; background: var(--glass-strong); margin-top: .2rem; overflow: hidden; }
+.js-barre i { position: absolute; top: 0; bottom: 0; }
+.js-tete { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--brand-2); box-shadow: 0 0 8px var(--brand-2); }
+.js-tete[hidden] { display: none; }
+
 .jauge { position: relative; }
-.jauge .barre i { transition: width .8s cubic-bezier(.25,.8,.3,1); }
+.jauge .barre i { transition: width .8s cubic-bezier(.25, .8, .3, 1); }
+.scene.anime ~ * .jauge .barre i, #vue.jeu-anim .jauges .barre i { will-change: width; }
+.jauge.argent { grid-template-columns: 7.5rem 1fr auto; } .jauge.argent b { white-space: nowrap; }
 .delta { position: absolute; right: 0; top: -.9rem; font-style: normal; font-weight: 800; font-size: .78rem; padding: 0 .4rem; border-radius: 999px; animation: delta 2.4s ease-out forwards; }
 .delta.pos { color: #fff; background: var(--ok); } .delta.neg { color: #fff; background: var(--ko); }
 @keyframes delta { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; transform: translateY(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
 .evt { display: flex; gap: .9rem; align-items: flex-start; }
 .evt-ico { font-size: 2.4rem; line-height: 1; }
-.evt.pop { animation: pop .45s cubic-bezier(.2,1.5,.4,1); }
+.evt.pop { animation: pop .45s cubic-bezier(.2, 1.5, .4, 1); }
 .evt.pop .evt-ico { animation: secoue .6s .35s; }
-@keyframes secoue { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-14deg) scale(1.15); } 75% { transform: rotate(12deg) scale(1.1); } }
 .journal li.neuf { animation: pop .4s ease-out; border-color: var(--brand); }
 .trophee-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .6rem; }
-.trophee { display: grid; justify-items: center; text-align: center; gap: .15rem; padding: .7rem .5rem; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border); animation: pop .45s cubic-bezier(.2,1.5,.4,1) both; }
+.trophee { display: grid; justify-items: center; text-align: center; gap: .15rem; padding: .7rem .5rem; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-border); animation: pop .45s cubic-bezier(.2, 1.5, .4, 1) both; }
 .trophee span { font-size: 2rem; } .trophee small { font-size: .72rem; color: var(--muted); }
 .trophee.ok { border-color: color-mix(in srgb, var(--mid) 70%, transparent); box-shadow: 0 0 18px color-mix(in srgb, var(--mid) 30%, transparent); }
 .trophee.verrou { opacity: .5; filter: grayscale(1); }
@@ -743,10 +792,13 @@ a.tag:hover { filter: brightness(1.15); }
 .confettis i { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px; animation: confetti linear forwards; }
 @keyframes confetti { to { top: 105%; transform: rotate(720deg) translateX(40px); } }
 @media (max-width: 680px) {
-  .scene { height: 200px; } .lieu span { font-size: 2rem; } .lieu small { display: none; } .avatar .perso { font-size: 2.1rem; }
+  .scene { height: 250px; }
+  .lieu span { font-size: 2.3rem; } .lieu small { display: none; } .arbre { font-size: 1.8rem; }
+  .joueur .perso { font-size: 2.1rem; } .vehicule { font-size: 1.6rem; }
+  .hud { right: .7rem; top: 2.8rem; } .hud b { font-size: .74rem; }
+  .lumiere { width: 80px; height: 60px; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .nuage, .avatar .perso, .fx, .delta, .evt.pop, .trophee, .copie, .journal li.neuf { animation: none !important; }
-  .delta { opacity: 1; }
-}
-.jauge.argent { grid-template-columns: 7.5rem 1fr auto; } .jauge.argent b { white-space: nowrap; }
+/* Animations coupées par la personne (case « Animations ») : la scène reste fixe. */
+#vue:not(.jeu-anim) .nuage, #vue:not(.jeu-anim) .meteo i, #vue:not(.jeu-anim) .fx, #vue:not(.jeu-anim) .delta, #vue:not(.jeu-anim) .evt.pop,
+#vue:not(.jeu-anim) .trophee, #vue:not(.jeu-anim) .copie, #vue:not(.jeu-anim) .journal li.neuf { animation: none !important; }
+#vue:not(.jeu-anim) .delta { opacity: 1; }

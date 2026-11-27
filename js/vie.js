@@ -219,7 +219,7 @@
     if (sommeil < p.sommeil - 0.2) lignes.push(`Semaine trop chargée : tu as dormi environ ${fmt(sommeil, 1)} h par nuit.`);
     if (relache) lignes.push("Relâche : aucun cours.");
     if (!lignes.length) lignes.push("Semaine normale : cours, travaux et routine.");
-    s.journal.unshift({ w, lignes, evt: ev ? s.evt : null });
+    s.journal.unshift({ w, lignes, evt: ev ? s.evt : null, choix: idx });
     s.hist.push({ w, energie: Math.round(s.energie), moral: Math.round(s.moral), prep: prep == null ? null : Math.round(prep), argent: s.argent });
     if (ev) s.vus.push(s.evt);
     s.semaine = w; s.evt = null; s.choix = null;
@@ -276,100 +276,320 @@
   /* ---------- Mise en scène style jeu ---------- */
   const AVATARS = ["🧑‍🎓", "👩‍🎓", "👨‍🎓", "🧑🏽‍🎓", "👩🏿‍🎓", "👨🏻‍🎓"];
   const LIEUX = [
-    { k: "campus", x: 12, nom: "Campus" }, { k: "sport", x: 31, ico: "🏟️", nom: "Gym" },
-    { k: "travail", x: 50, ico: "🏪", nom: "Travail" }, { k: "sorties", x: 69, ico: "☕", nom: "Café" },
-    { k: "maison", x: 88, ico: "🏠", nom: "Maison" },
+    { k: "maison", x: 9, ico: "🏠", nom: "Maison" }, { k: "campus", x: 31, nom: "Campus" },
+    { k: "sorties", x: 53, ico: "☕", nom: "Café" }, { k: "sport", x: 72, ico: "🏟️", nom: "Gym" },
+    { k: "travail", x: 91, ico: "🏪", nom: "Travail" },
   ];
   const LIEU_X = Object.fromEntries(LIEUX.map((l) => [l.k, l.x]));
-  const ACT_ICO = { cours: "📖", labo: "🧪", stage: "🩺", etude: "✏️", travail: "💼", sport: "⚽", sorties: "🎉", sommeil: "💤", maison: "🏠" };
-  const ACT_FX = { travail: "+💵", sport: "+⚡", sorties: "+🙂", etude: "+📚", cours: "+🧠", labo: "+🧠", stage: "+🩺" };
+  const ARBRES = [19.5, 42, 62.5, 81.5], LAMPES = [24, 47, 67, 86];
+  const ACT_ICO = { cours: "📖", labo: "🧪", stage: "🩺", etude: "✏️", travail: "💼", sport: "⚽", sorties: "🎉", sommeil: "💤" };
+  const PARTICULES = { cours: ["💡", "❓", "📐"], labo: ["🧪", "⚗️", "💡"], stage: ["🩺", "📋", "💉"], etude: ["✏️", "✨", "📚"],
+    travail: ["🪙", "💵", "🪙"], sport: ["💦", "💪", "⚡"], sorties: ["🎵", "🎶", "😂"] };
   const EVT_ICO = { quart: "💼", grippe: "🤒", equipe: "👥", cell: "📱", party: "🎉", atelier: "🧠", bourse: "💰", club: "🏀", quiz: "❓",
     visite: "🏡", stage: "📄", loyer: "🏠", nuit: "🌙", prof: "👩‍🏫", rentree: "🎒", relache: "🏖️" };
-  const NOMS_JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-  const reduit = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const moment = (h) => (h < 9 ? "matin" : h < 17 ? "jour" : h < 20 ? "soir" : "nuit");
-  const humeur = (s) => (s.energie < 30 ? "🥱" : s.moral >= 75 ? "😄" : s.moral >= 55 ? "🙂" : s.moral >= 35 ? "😐" : s.moral >= 20 ? "😟" : "😫");
+  const JOURS_COURTS = ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."];
+  const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+  const METEO_ICO = { neige: "🌨️", pluie: "🌧️", feuilles: "🍂", clair: "🌤️" };
+  const animOn = () => store.get("vie:anim", true);
+  const humeurDe = (e, m) => (e < 30 ? "🥱" : m >= 75 ? "😄" : m >= 55 ? "🙂" : m >= 35 ? "😐" : m >= 20 ? "😟" : "😫");
+  const humeur = (s) => humeurDe(s.energie, s.moral);
   const lieuDe = (b) => (["cours", "labo", "stage"].includes(b.type) ? "campus" : b.type === "etude" ? (b.j < 5 && b.h < 17 ? "campus" : "maison") : b.type);
   const moyenneSession = (s) => Math.round(0.4 * (s.notes.mi ?? 0) + 0.6 * (s.notes.fin ?? 0));
+  const hasard = (t) => t[Math.floor(Math.random() * t.length)];
+
+  /* Calendrier : le cégep commence vers la fin d'août, l'université après la fête du Travail. */
+  function dateDe(p, w, j) {
+    const d = new Date(new Date().getFullYear(), 8, 1);
+    while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
+    if (p.niveau === "cegep") d.setDate(d.getDate() - 14);
+    d.setDate(d.getDate() + (w - 1) * 7 + j);
+    return d;
+  }
+  function saison(d) {
+    const m = d.getMonth();
+    if (m === 11 || (m === 10 && d.getDate() >= 18)) return "hiver";
+    return m === 10 ? "novembre" : m === 9 ? "automne" : "ete";
+  }
+  function meteo(w, sa) {
+    const r = (Math.sin(w * 99.7) + 1) / 2;
+    if (sa === "hiver") return r < 0.6 ? "neige" : "clair";
+    if (r < 0.28) return "pluie";
+    return sa === "automne" && r < 0.75 ? "feuilles" : "clair";
+  }
+
+  /* Ciel : dégradé calculé heure par heure. */
+  const CIEL = [[0, "#0b1030", "#1b2350"], [5.5, "#141a40", "#2b3266"], [7, "#f59a6c", "#fcd9a8"], [9, "#5fb4ea", "#c4e8fb"], [16, "#4fa8e6", "#b8e2fa"],
+    [18, "#f39a5b", "#fbd08a"], [19.5, "#a94b78", "#f08a6b"], [21, "#262b63", "#4a3f78"], [23, "#0b1030", "#1b2350"], [24, "#0b1030", "#1b2350"]];
+  function melange(a, b, k) {
+    const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    return `rgb(${[16, 8, 0].map((s) => Math.round(((pa >> s) & 255) * (1 - k) + ((pb >> s) & 255) * k)).join(",")})`;
+  }
+  function cielDe(h) {
+    h = ((h % 24) + 24) % 24;
+    let i = 0;
+    while (i < CIEL.length - 2 && CIEL[i + 1][0] <= h) i++;
+    const [h1, a1, b1] = CIEL[i], [h2, a2, b2] = CIEL[i + 1], k = (h - h1) / (h2 - h1 || 1);
+    return `linear-gradient(${melange(a1, a2, k)}, ${melange(b1, b2, k)})`;
+  }
+  function nuitDe(h) {
+    h = ((h % 24) + 24) % 24;
+    if (h >= 21 || h < 5.5) return 1;
+    if (h >= 18) return (h - 18) / 3;
+    return h < 8 ? 1 - (h - 5.5) / 2.5 : 0;
+  }
+  function astres(h) {
+    h = ((h % 24) + 24) % 24;
+    const arc = (k) => ({ left: 4 + 92 * k, top: 62 - Math.sin(Math.PI * k) * 52 });
+    const ks = (h - 6) / 14, hm = h >= 18 ? h - 18 : h + 6, kl = hm / 13;
+    return { soleil: Object.assign(arc(clamp(ks, 0, 1)), { op: ks > 0 && ks < 1 ? 1 : 0 }), lune: Object.assign(arc(clamp(kl, 0, 1)), { op: nuitDe(h) }) };
+  }
+  const styleAstre = (a) => `left:${a.left}%;top:${a.top}%;opacity:${a.op}`;
 
   function sceneHtml(s, p, avatar) {
     const fin = s.fini, moy = moyenneSession(s);
-    const x = fin ? LIEU_X.campus : LIEU_X.maison;
-    const bulle = fin ? (moy >= 60 ? "🎓" : "😮‍💨") : "🏠";
-    const hud = fin ? "Session terminée !" : `Semaine ${s.semaine + 1} · prêt·e à commencer`;
-    return `<div class="scene m-${fin ? "jour" : "matin"}" id="scene" aria-label="Animation de la semaine">
-      <div class="ciel"><span class="astre soleil">☀️</span><span class="astre lune">🌙</span><span class="etoiles">✦ ✧ ✦ ✧ ✦</span>
-        <span class="nuage n1">☁️</span><span class="nuage n2">☁️</span></div>
-      <div class="hud"><b id="sc-hud">${hud}</b><span id="sc-heure"></span></div>
-      ${LIEUX.map((l) => `<div class="lieu" style="left:${l.x}%"><span>${l.k === "campus" ? (p.niveau === "uni" ? "🏛️" : "🏫") : l.ico}</span><small>${l.nom}</small></div>`).join("")}
-      <div class="sol"></div>
-      <div class="avatar" id="avatar" style="left:${x}%"><span class="bulle" id="bulle">${bulle}</span><span class="perso">${avatar}</span><span class="humeur" id="humeur">${humeur(s)}</span></div>
-      <button type="button" class="btn ghost small sc-passer" data-act="passer" hidden>Passer ⏭</button>
-      <div class="sc-overlay" id="sc-overlay"></div>
+    const w = fin ? V.semaines : s.semaine + 1;
+    const d = dateDe(p, w, 0), sa = saison(d), me = meteo(w, sa);
+    const relache = w === V.relache;
+    const blocs = construireHoraire(p).blocs.filter((b) => !(relache && ["cours", "labo", "stage"].includes(b.type)));
+    const h = fin ? 13 : 7, as = astres(h);
+    const hud = fin ? "🎓 Session terminée !" : `Semaine ${w} · ${JOURS_COURTS[0]} ${d.getDate()} ${MOIS[d.getMonth()]} · 7:00`;
+    const gouttes = me === "clair" ? "" : Array.from({ length: me === "pluie" ? 40 : 26 }, (_, i) =>
+      `<i style="left:${(i * 37 + 11) % 100}%;animation-delay:-${((i * 0.37) % 3).toFixed(2)}s;animation-duration:${me === "pluie" ? (0.6 + (i % 5) * 0.08).toFixed(2) : (3 + (i % 5) * 0.6).toFixed(1)}s">${me === "neige" ? "❄" : me === "feuilles" ? (i % 2 ? "🍂" : "🍁") : ""}</i>`).join("");
+    return `<div class="scene-wrap">
+      <div class="scene s-${sa} meteo-${me}" id="scene" style="--nuit:${nuitDe(h).toFixed(2)}">
+        <div class="ciel" id="sc-ciel" style="background:${cielDe(h)}"></div>
+        <div class="etoiles">${Array.from({ length: 22 }, (_, i) => `<i style="left:${(i * 53 + 7) % 100}%;top:${(i * 29 + 5) % 48}%"></i>`).join("")}</div>
+        <span class="astre" id="sc-soleil" style="${styleAstre(as.soleil)}">☀️</span><span class="astre" id="sc-lune" style="${styleAstre(as.lune)}">🌙</span>
+        <span class="nuage n1">☁️</span><span class="nuage n2">☁️</span><span class="nuage n3">☁️</span>
+        <div class="collines"></div>
+        ${ARBRES.map((x, i) => `<span class="arbre" style="left:${x}%">${sa === "hiver" || i % 2 ? "🌲" : "🌳"}</span>`).join("")}
+        ${LIEUX.map((l) => `<div class="lieu" style="left:${l.x}%"><i class="lumiere"></i><span>${l.k === "campus" ? (p.niveau === "uni" ? "🏛️" : "🏫") : l.ico}</span><small>${l.nom}</small></div>`).join("")}
+        ${LAMPES.map((x) => `<div class="lampe" style="left:${x}%"><i></i></div>`).join("")}
+        <div class="trottoir"></div><div class="route"><i class="ligne"></i></div>
+        <div class="meteo">${gouttes}</div>
+        <div class="joueur" id="avatar" style="left:${fin ? LIEU_X.campus : LIEU_X.maison}%"><span class="bulle" id="bulle">${fin ? (moy >= 60 ? "🎓" : "😮‍💨") : "🥣"}</span><span class="perso" id="perso">${avatar}</span><span class="humeur" id="humeur">${humeur(s)}</span></div>
+        <div class="hud"><b id="sc-hud">${hud}</b><span class="hud-meteo" title="Météo de la semaine">${METEO_ICO[me]}</span></div>
+        <div class="sc-ctrl" id="sc-ctrl" hidden>
+          <button type="button" data-sc="pause" title="Pause">⏸</button>
+          ${[1, 2, 4].map((v) => `<button type="button" data-sc="v" data-v="${v}" title="Vitesse ${v}×">${v}×</button>`).join("")}
+          <button type="button" data-sc="passer" title="Passer la semaine">⏭</button>
+        </div>
+        <div class="sc-overlay" id="sc-overlay"></div>
+      </div>
+      <div class="jours-strip" id="sc-strip">${JOURS.map((jn, j) => `<div class="js-jour" data-j="${j}"><b>${jn}</b><div class="js-barre">${blocs.filter((b) => b.j === j).map((b) => `<i class="t-${b.type}" style="left:${((b.h - 7) / 16) * 100}%;width:${(b.n / 16) * 100}%"></i>`).join("")}</div></div>`).join("")}<span class="js-tete" id="sc-tete" hidden></span></div>
     </div>`;
   }
 
-  /* Anime la semaine qui vient d'être vécue : chaque bloc de l'horaire, jour par jour, puis les examens. */
-  function animerSemaine(vue, s, p, w, epreuve, fini) {
+  /* Moteur image par image : l'horloge avance, le personnage marche d'un lieu à l'autre selon l'horaire,
+     le ciel suit l'heure, les jauges évoluent en direct, puis l'imprévu et les examens s'affichent. */
+  function animerSemaine(vue, o) {
     const scene = vue.querySelector("#scene");
-    if (!scene || reduit()) { fini(); return null; }
-    const av = scene.querySelector("#avatar"), bulle = scene.querySelector("#bulle"), hud = scene.querySelector("#sc-hud"), heure = scene.querySelector("#sc-heure");
-    const passer = scene.querySelector(".sc-passer");
+    if (!scene || !animOn()) { o.fini(); return null; }
+    const $ = (sel) => scene.querySelector(sel);
+    const av = $("#avatar"), perso = $("#perso"), bulle = $("#bulle"), hum = $("#humeur"), hud = $("#sc-hud"), ciel = $("#sc-ciel"),
+      soleil = $("#sc-soleil"), lune = $("#sc-lune"), ctrl = $("#sc-ctrl"), over = $("#sc-overlay");
+    const strip = vue.querySelector("#sc-strip"), tete = vue.querySelector("#sc-tete");
+    const { p, w } = o;
     const relache = w === V.relache;
     const blocs = construireHoraire(p).blocs.filter((b) => !(relache && ["cours", "labo", "stage"].includes(b.type)));
-    const etapes = [];
-    for (let j = 0; j < 7; j++) {
-      blocs.filter((b) => b.j === j).sort((a, b) => a.h - b.h).forEach((b) => etapes.push({ j, h: b.h, type: b.type, lieu: lieuDe(b) }));
-      etapes.push({ j, h: 23, type: "sommeil", lieu: "maison" });
-    }
-    const evtIco = s.journal[0] && s.journal[0].evt ? EVT_ICO[s.journal[0].evt] : null;
-    const dur = clamp(Math.round(6000 / etapes.length), 120, 260);
-    let i = 0, timer = null, arrete = false, x = LIEU_X.maison;
-    passer.hidden = false;
+    const fin = { energie: o.s.energie, moral: o.s.moral, argent: o.s.argent, prep: o.s.prepN ? o.s.prepSum / o.s.prepN : null };
+    const deb = { energie: o.avant.energie, moral: o.avant.moral, argent: o.avant.argent, prep: o.avant.prepN ? o.avant.prepSum / o.avant.prepN : null };
+    const jauge = (k) => vue.querySelector(`.jauge[data-j="${k}"]`);
+    const evtQuand = o.evt && (o.evt.id === "rentree" || o.evt.id === "relache") ? [0, 8.2] : [2, 12.5];
+    let vit = o.vitesse, pause = false, arrete = false, raf = 0, last = performance.now();
+    let j = 0, h = 7, x = LIEU_X.maison, dir = 1, phase = "jour", tPhase = 0, tAnim = 0, tFx = 0, hudTxt = "";
+    let evtFait = !o.evt, examFait = !o.epreuve, tOuvert = 0;
+    const bus = new Set(), vehicules = [];
+
+    ctrl.hidden = false; tete.hidden = false;
     scene.classList.add("anime");
-    const terminer = () => {
-      if (arrete) return; arrete = true; clearTimeout(timer);
-      scene.classList.remove("anime"); passer.hidden = true;
-      fini();
+    const majCtrl = () => {
+      ctrl.querySelectorAll("[data-v]").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) === vit));
+      ctrl.querySelector('[data-sc="pause"]').textContent = pause ? "▶" : "⏸";
     };
-    const fx = (txt) => {
-      const e = document.createElement("span"); e.className = "fx"; e.textContent = txt; e.style.left = x + "%";
-      scene.appendChild(e); setTimeout(() => e.remove(), 1000);
-    };
-    const examen = () => {
-      if (!epreuve) { terminer(); return; }
-      const o = scene.querySelector("#sc-overlay");
-      const verdict = epreuve.n >= 85 ? "Excellent !" : epreuve.n >= 70 ? "Réussi" : epreuve.n >= 60 ? "De justesse" : "Échec 😬";
-      o.innerHTML = `<div class="copie"><span class="copie-ico">📝</span><b>${esc(epreuve.t)}</b><strong class="note">0 %</strong><span class="tampon ${epreuve.n >= 60 ? "ok" : "ko"}">${verdict}</span></div>`;
-      o.classList.add("on");
-      const note = o.querySelector(".note"), t0 = performance.now();
-      const pas = (t) => {
-        if (arrete) return;
-        const k = Math.min(1, (t - t0) / 900);
-        note.textContent = Math.round(epreuve.n * k) + " %";
-        if (k < 1) requestAnimationFrame(pas);
-        else { o.querySelector(".tampon").classList.add("on"); timer = setTimeout(terminer, 1100); }
-      };
-      requestAnimationFrame(pas);
-    };
-    const suivante = () => {
+    majCtrl();
+
+    function terminer() {
       if (arrete) return;
-      if (i >= etapes.length) { examen(); return; }
-      const e = etapes[i++];
-      const nx = LIEU_X[e.lieu];
-      av.classList.toggle("gauche", nx < x);
-      av.classList.toggle("marche", nx !== x);
-      av.style.transitionDuration = dur + "ms";
-      av.style.left = nx + "%"; x = nx;
-      bulle.textContent = ACT_ICO[e.type] || "🙂";
-      scene.className = scene.className.replace(/m-\w+/, "m-" + moment(e.h));
-      hud.textContent = `Semaine ${w} · ${NOMS_JOURS[e.j]}`;
-      heure.textContent = e.type === "sommeil" ? "Dodo" : `${e.h} h`;
-      if (ACT_FX[e.type] && Math.random() < 0.5) setTimeout(() => !arrete && fx(ACT_FX[e.type]), dur * 0.6);
-      if (e.j === 2 && e.type === "sommeil" && evtIco) fx(evtIco);
-      timer = setTimeout(suivante, e.type === "sommeil" ? dur * 2 : dur);
-    };
-    suivante();
+      arrete = true;
+      cancelAnimationFrame(raf);
+      scene.removeEventListener("click", surClic);
+      vehicules.forEach((v) => v.el.remove());
+      o.fini();
+    }
+    function surClic(e) {
+      e.stopPropagation();
+      const b = e.target.closest("[data-sc]");
+      if (b) {
+        if (b.dataset.sc === "passer") { terminer(); return; }
+        if (b.dataset.sc === "pause") pause = !pause;
+        if (b.dataset.sc === "v") { vit = Number(b.dataset.v); store.set("vie:vitesse", vit); }
+        majCtrl();
+        return;
+      }
+      if ((phase === "evt" || phase === "exam") && performance.now() - tOuvert > 600) tOuvert = -1e9;
+    }
+    scene.addEventListener("click", surClic);
+
+    function fx(txt, px, cls = "") {
+      const e = document.createElement("span");
+      e.className = "fx " + cls; e.textContent = txt; e.style.left = px + "%";
+      scene.appendChild(e);
+      setTimeout(() => e.remove(), 1500);
+    }
+    const blocA = (hh) => blocs.find((b) => b.j === j && hh >= b.h && hh < b.h + b.n);
+    const bientot = () => blocs.find((b) => b.j === j && b.h > h && b.h - h <= 2.5);
+
+    function jauges(f) {
+      const val = (k) => (deb[k] == null ? fin[k] : deb[k] + (fin[k] - deb[k]) * f);
+      [["energie", 35, 60], ["moral", 35, 60], ["prep", 60, 80]].forEach(([k, ko, mid]) => {
+        const el = jauge(k);
+        if (!el || fin[k] == null) return;
+        const v = val(k), i = el.querySelector(".barre i");
+        i.style.width = clamp(v, 0, 100) + "%";
+        i.className = v < ko ? "ko" : v < mid ? "mid" : "ok";
+        el.querySelector("b").textContent = Math.round(v);
+      });
+      const ea = jauge("argent");
+      if (ea) { const v = Math.round(val("argent")), b = ea.querySelector("b"); b.textContent = `${fmt(v, 0)} $`; b.className = v < 0 ? "neg" : "pos"; }
+      hum.textContent = humeurDe(val("energie"), val("moral"));
+    }
+
+    function ouvrirEvt() {
+      const ev = o.evt, e = ev.c.e || {};
+      const chip = (v, ico, suffixe = "") => (v ? `<span class="chip ${v > 0 ? "pos" : "neg"}">${v > 0 ? "+" : "−"}${fmt(Math.abs(v), 0)}${suffixe} ${ico}</span>` : "");
+      over.innerHTML = `<div class="sc-evt"><span class="sc-evt-ico">${ev.ico}</span><div>
+        <small>${JOURS_COURTS[j]} · imprévu</small><b>${esc(ev.t)}</b>
+        <p>Ton choix : <b>${esc(ev.c.t)}</b></p>
+        <div class="chips">${chip(e.energie, "⚡")}${chip(e.moral, "🙂")}${chip(e.argent, "💵", " $")}${chip(e.prep, "📚")}${e.travail ? `<span class="chip neu">${e.travail > 0 ? "+" : "−"}${Math.abs(e.travail)} h d'emploi 💼</span>` : ""}${e.temps ? `<span class="chip neu">${e.temps} h de ton temps ⏱️</span>` : ""}</div>
+        <small class="sc-continuer">Clique pour continuer</small></div></div>`;
+      over.classList.add("on");
+      bulle.textContent = ev.ico;
+      fx(ev.ico, x, "gros");
+      phase = "evt"; tPhase = 0; tOuvert = performance.now();
+    }
+    function ouvrirExam() {
+      const ep = o.epreuve, verdict = ep.n >= 85 ? "Excellent !" : ep.n >= 70 ? "Réussi" : ep.n >= 60 ? "De justesse" : "Échec 😬";
+      over.innerHTML = `<div class="copie"><span class="copie-ico">📝</span><b>${esc(ep.t)}</b><strong class="note">0 %</strong><span class="tampon ${ep.n >= 60 ? "ok" : "ko"}">${verdict}</span></div>`;
+      over.classList.add("on");
+      bulle.textContent = "📝";
+      phase = "exam"; tPhase = 0; tOuvert = performance.now();
+    }
+    function fermer() { over.classList.remove("on"); phase = "jour"; }
+
+    // Ce que fait le personnage quand il n'a rien à l'horaire, selon l'endroit où il se trouve.
+    function attente(px) {
+      const ici = LIEUX.reduce((a, l) => (Math.abs(l.x - px) < Math.abs(a.x - px) ? l : a));
+      if (ici.k === "campus") return h >= 11.5 && h < 13.5 ? "🥪" : "💬";
+      if (ici.k === "travail") return "⏳";
+      if (ici.k === "sorties") return "☕";
+      if (ici.k === "sport") return "💧";
+      return h < 8.5 ? "🥣" : h >= 17.5 && h < 19.5 ? "🍝" : j > 4 ? "🎮" : ["📺", "📱", "🧹"][Math.floor(h) % 3];
+    }
+    function vehicule(ico, sens) {
+      const el = document.createElement("span");
+      el.className = "vehicule"; el.textContent = ico;
+      el.style.transform = sens > 0 ? "scaleX(-1)" : "";
+      scene.appendChild(el);
+      vehicules.push({ el, x: sens > 0 ? -12 : 112, v: sens * (ico === "🚌" ? 32 : 48) });
+    }
+
+    function image(now) {
+      if (arrete) return;
+      const reel = Math.min(0.25, (now - last) / 1000);
+      last = now;
+      raf = requestAnimationFrame(image);
+      if (pause) return;
+      const dt = reel * vit;
+      tAnim += dt;
+
+      // Écrans d'imprévu et d'examen : l'horloge s'arrête.
+      if (phase === "evt") { tPhase = (now - tOuvert) / 1000; if (tPhase > 3.6) fermer(); return; }
+      if (phase === "exam") {
+        tPhase = (now - tOuvert) / 1000;
+        const k = Math.min(1, tPhase / 1);
+        over.querySelector(".note").textContent = Math.round(o.epreuve.n * k) + " %";
+        if (k >= 1 && !over.querySelector(".tampon.on")) {
+          over.querySelector(".tampon").classList.add("on");
+          if (o.epreuve.n >= 80) for (let i = 0; i < 6; i++) setTimeout(() => !arrete && fx(hasard(["⭐", "🌟", "✨"]), 30 + Math.random() * 40, "gros"), i * 90);
+        }
+        if (tPhase > 2.6) fermer();
+        return;
+      }
+
+      const b = phase === "jour" ? blocA(h) : null;
+      const nb = phase === "jour" && !b ? bientot() : null;
+      const diner = phase === "jour" && !b && j < 5 && h >= 11.5 && h < 13.5 && Math.abs(x - LIEU_X.campus) < 1;
+      let cible = LIEU_X.maison;
+      if (phase === "jour") cible = b ? LIEU_X[lieuDe(b)] : nb ? LIEU_X[lieuDe(nb)] : diner ? x : LIEU_X.maison;
+      const d = cible - x, marche = Math.abs(d) > 0.2 && phase !== "nuit";
+      if (marche) { x += Math.sign(d) * Math.min(Math.abs(d), 75 * dt); dir = Math.sign(d); }
+
+      let hAff = h;
+      if (phase === "jour") {
+        // L'horloge s'arrête pendant les trajets et ne saute jamais un bloc de l'horaire.
+        const bornes = blocs.filter((x) => x.j === j).flatMap((x) => [x.h - 2.5, x.h, x.h + x.n]).filter((t) => t > h + 1e-6);
+        const borne = bornes.length ? Math.min(...bornes) : 23;
+        h = Math.min(h + (marche ? 0 : b ? 7 : 20) * dt, borne, 23);
+        if (!evtFait && j === evtQuand[0] && h >= evtQuand[1]) { evtFait = true; ouvrirEvt(); }
+        else if (!examFait && j === 3 && h >= 10) { examFait = true; ouvrirExam(); }
+        if (h >= 23) { h = 23; phase = "rentre"; }
+        hAff = h;
+      } else if (phase === "rentre") {
+        if (!marche) { phase = "nuit"; tPhase = 0; av.classList.add("dort"); }
+      } else if (phase === "nuit") {
+        tPhase += dt;
+        hAff = 23 + 8 * Math.min(1, tPhase / 0.55);
+        if (tPhase - tFx > 0.16) { tFx = tPhase; fx("💤", LIEU_X.maison + 1, "zz"); }
+        if (tPhase >= 0.55) {
+          j++; h = 7; hAff = 7; tFx = 0;
+          av.classList.remove("dort");
+          if (j >= 7) { jauges(1); terminer(); return; }
+          phase = "jour";
+          if (p.sommeil < 7) fx("🥱", x, "gros");
+        }
+      }
+
+      // Personnage.
+      av.style.left = x + "%";
+      let bob = Math.sin(tAnim * 3) * 1.5, rot = 0;
+      if (marche) { bob = Math.abs(Math.sin(tAnim * 16)) * 5; rot = Math.sin(tAnim * 16) * 6; }
+      else if (b && b.type === "sport") bob = Math.abs(Math.sin(tAnim * 9)) * 16;
+      else if (b && b.type === "sorties") { rot = Math.sin(tAnim * 10) * 14; bob = Math.abs(Math.sin(tAnim * 10)) * 4; }
+      perso.style.transform = `translateY(${-bob}px) rotate(${rot}deg) scaleX(${dir < 0 ? -1 : 1})`;
+      const dest = LIEUX.find((l) => l.x === cible);
+      const ico = phase === "nuit" || phase === "rentre" && !marche ? "💤" : marche ? (dest.k === "campus" ? (p.niveau === "uni" ? "🏛️" : "🏫") : dest.ico)
+        : b ? ACT_ICO[b.type] : attente(x);
+      if (bulle.textContent !== ico) bulle.textContent = ico;
+      if (b && !marche && tAnim - tFx > 0.5) { tFx = tAnim; fx(hasard(PARTICULES[b.type] || ["✨"]), x + (Math.random() * 6 - 3)); }
+
+      // Véhicules : autobus matin et soir, quelques autos.
+      const cle = j + (h < 12 ? "m" : "s");
+      if (phase === "jour" && ((h > 7.6 && h < 8.6) || (h > 16.8 && h < 17.8)) && !bus.has(cle)) { bus.add(cle); vehicule("🚌", Math.random() < 0.5 ? 1 : -1); }
+      if (phase === "jour" && Math.random() < dt * 0.25) vehicule(hasard(["🚗", "🚙", "🚕", "🚲"]), Math.random() < 0.5 ? 1 : -1);
+      for (let i = vehicules.length - 1; i >= 0; i--) {
+        const v = vehicules[i];
+        v.x += v.v * dt;
+        v.el.style.left = v.x + "%";
+        if (v.x < -15 || v.x > 115) { v.el.remove(); vehicules.splice(i, 1); }
+      }
+
+      // Ciel, astres, horloge, bandeau des jours et jauges.
+      ciel.style.background = cielDe(hAff);
+      scene.style.setProperty("--nuit", nuitDe(hAff).toFixed(3));
+      const as = astres(hAff);
+      soleil.style.cssText = styleAstre(as.soleil);
+      lune.style.cssText = styleAstre(as.lune);
+      const hh = Math.floor(hAff) % 24, mm = Math.floor(((hAff % 1) * 60) / 15) * 15;
+      const dj = dateDe(p, w, Math.min(j, 6));
+      const t = `Semaine ${w} · ${JOURS_COURTS[Math.min(j, 6)]} ${dj.getDate()} ${MOIS[dj.getMonth()]} · ${hh}:${String(mm).padStart(2, "0")}`;
+      if (t !== hudTxt) { hudTxt = t; hud.textContent = t; }
+      const pos = (j + (Math.min(hAff, 23) - 7) / 16) / 7;
+      tete.style.left = pos * 100 + "%";
+      strip.querySelectorAll(".js-jour").forEach((c, i) => { c.classList.toggle("fait", i < j); c.classList.toggle("en-cours", i === j); });
+      jauges(clamp(pos, 0, 1));
+    }
+    raf = requestAnimationFrame(image);
     return terminer;
   }
 
@@ -379,7 +599,7 @@
       vue.querySelectorAll("[data-to]").forEach((el) => (el.style.width = el.dataset.to + "%"));
       vue.querySelectorAll("[data-a]").forEach((el) => {
         const de = Number(el.dataset.de), a = Number(el.dataset.a), argent = el.dataset.fmt === "argent";
-        if (de === a || reduit()) return;
+        if (de === a || !animOn()) return;
         const t0 = performance.now();
         const pas = (t) => {
           const k = Math.min(1, (t - t0) / 800), v = Math.round(de + (a - de) * (1 - Math.pow(1 - k, 3)));
@@ -392,10 +612,10 @@
   }
 
   function confettis(vue) {
-    if (reduit()) return;
+    if (!animOn()) return;
     const box = document.createElement("div"); box.className = "confettis"; box.setAttribute("aria-hidden", "true");
     const couleurs = ["#ff5d8f", "#ffd166", "#06d6a0", "#4cc9f0", "#8b5cf6", "#ff8c42"];
-    box.innerHTML = Array.from({ length: 70 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${couleurs[i % couleurs.length]};animation-delay:${(Math.random() * 0.8).toFixed(2)}s;animation-duration:${(2.2 + Math.random() * 1.6).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)"></i>`).join("");
+    box.innerHTML = Array.from({ length: 90 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${couleurs[i % couleurs.length]};animation-delay:${(Math.random() * 0.8).toFixed(2)}s;animation-duration:${(2.2 + Math.random() * 1.6).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)"></i>`).join("");
     vue.appendChild(box);
     setTimeout(() => box.remove(), 4500);
   }
@@ -422,17 +642,17 @@
     const moy = s.prepN ? s.prepSum / s.prepN : null;
     const moyA = a && a.prepN ? a.prepSum / a.prepN : null;
     const delta = (d, suffixe = "") => (d ? `<em class="delta ${d > 0 ? "pos" : "neg"}">${d > 0 ? "+" : "−"}${fmt(Math.abs(d), 0)}${suffixe}</em>` : "");
-    const j = (t, v, va, cls) => {
-      const de = a && va != null ? va : v;
+    const j = (k, t, v, va, cls) => {
+      const de = a && va != null && !a.live ? va : v;
       const d = a && va != null ? Math.round(v) - Math.round(va) : 0;
-      return `<div class="jauge"><span>${t}</span><div class="barre"><i class="${cls}" style="width:${clamp(de, 0, 100)}%" data-to="${clamp(v, 0, 100)}"></i></div><b data-de="${Math.round(de)}" data-a="${Math.round(v)}">${Math.round(de)}</b>${delta(d)}</div>`;
+      return `<div class="jauge" data-j="${k}"><span>${t}</span><div class="barre"><i class="${cls}" style="width:${clamp(de, 0, 100)}%" data-to="${clamp(v, 0, 100)}"></i></div><b data-de="${Math.round(de)}" data-a="${Math.round(v)}">${Math.round(de)}</b>${delta(d)}</div>`;
     };
     const dA = a ? s.argent - a.argent : 0;
     return `<div class="jauges">
-      ${j("⚡ Énergie", s.energie, a?.energie, s.energie < 35 ? "ko" : s.energie < 60 ? "mid" : "ok")}
-      ${j("🙂 Moral", s.moral, a?.moral, s.moral < 35 ? "ko" : s.moral < 60 ? "mid" : "ok")}
-      ${moy == null ? `<div class="jauge"><span>📚 Préparation</span><div class="barre"><i></i></div><b>—</b></div>` : j("📚 Préparation", moy, moyA, moy < 60 ? "ko" : moy < 80 ? "mid" : "ok")}
-      <div class="jauge argent"><span>💵 Argent</span><span></span><b class="${s.argent < 0 ? "neg" : "pos"}" data-fmt="argent" data-de="${a ? a.argent : s.argent}" data-a="${s.argent}">${fmt(a ? a.argent : s.argent, 0)} $</b>${delta(dA, " $")}</div>
+      ${j("energie", "⚡ Énergie", s.energie, a?.energie, s.energie < 35 ? "ko" : s.energie < 60 ? "mid" : "ok")}
+      ${j("moral", "🙂 Moral", s.moral, a?.moral, s.moral < 35 ? "ko" : s.moral < 60 ? "mid" : "ok")}
+      ${moy == null ? `<div class="jauge"><span>📚 Préparation</span><div class="barre"><i></i></div><b>—</b></div>` : j("prep", "📚 Préparation", moy, moyA, moy < 60 ? "ko" : moy < 80 ? "mid" : "ok")}
+      <div class="jauge argent" data-j="argent"><span>💵 Argent</span><span></span><b class="${s.argent < 0 ? "neg" : "pos"}" data-fmt="argent" data-de="${a && !a.live ? a.argent : s.argent}" data-a="${s.argent}">${fmt(a && !a.live ? a.argent : s.argent, 0)} $</b>${delta(dA, " $")}</div>
     </div>`;
   }
 
@@ -475,7 +695,8 @@
         <button class="btn" data-act="semaine" ${ev && s.choix == null ? "disabled title=\"Choisis d'abord quoi faire\"" : ""}>▶ Vivre la semaine ${w}</button>
         <button class="btn ghost" data-act="auto">⏩ Simuler jusqu'à la fin</button>
         <button class="btn ghost" data-act="demarrer">↺ Recommencer</button>
-      </div>` : `<div class="row-actions"><button class="btn" data-act="demarrer">↺ Refaire une session</button></div>`}
+        <label class="anim-toggle"><input type="checkbox" data-anim ${animOn() ? "checked" : ""}> 🎬 Animations</label>
+      </div>` : `<div class="row-actions"><button class="btn" data-act="demarrer">↺ Refaire une session</button><label class="anim-toggle"><input type="checkbox" data-anim ${animOn() ? "checked" : ""}> 🎬 Animations</label></div>`}
       ${graph}
       ${s.journal.length ? `<h3 class="h4">Journal</h3><ol class="journal">${s.journal.map((j, i) => `<li class="${i === 0 && transition ? "neuf" : ""}"><span class="tl-date">Semaine ${j.w}</span>${j.lignes.map((l) => `<p class="small">${l}</p>`).join("")}</li>`).join("")}</ol>` : ""}`;
   }
@@ -541,6 +762,7 @@
       const vue = app.querySelector("#vue");
       if (stopAnim && !transition) { const f = stopAnim; stopAnim = null; f(); return; }
       vue.innerHTML = onglet === "horaire" ? horaireHtml(p) : simulationHtml(s, p, avatar, transition);
+      vue.classList.toggle("jeu-anim", animOn());
       if (transition && onglet === "simulation") {
         effets(vue);
         if (s && s.fini && !transition.avant.fini && moyenneSession(s) >= 75) confettis(vue);
@@ -562,9 +784,10 @@
         app.querySelector("#o-" + r.dataset.k).textContent = `${fmt(Number(r.value), Number(r.step) < 1 ? 1 : 0)} ${app.querySelector("#o-" + r.dataset.k).textContent.split(" ").slice(1).join(" ")}`;
         maj();
       }));
+      app.querySelector("#vue").onchange = (e) => { if (e.target.matches("[data-anim]")) { store.set("vie:anim", e.target.checked); maj(); } };
       app.querySelector("#vue").onclick = (e) => {
         const vue = app.querySelector("#vue");
-        if (stopAnim) { if (e.target.closest("#scene, [data-act=passer]")) stopAnim(); return; }
+        if (stopAnim) return;
         const av = e.target.closest("[data-avatar]");
         if (av) { avatar = av.dataset.avatar; store.set("vie:avatar", avatar); maj(); return; }
         const c = e.target.closest("[data-choix]");
@@ -589,8 +812,11 @@
             : quiz ? { t: "Quiz surprise", n: s.quiz[s.quiz.length - 1] } : null;
           vue.querySelectorAll(".sim-actions button, .evt button").forEach((x) => (x.disabled = true));
           const scene = vue.querySelector("#scene");
-          if (scene) scene.scrollIntoView({ behavior: "smooth", block: "center" });
-          stopAnim = animerSemaine(vue, s, p, w, epreuve, () => { stopAnim = null; maj({ avant }); });
+          if (scene) { const r = scene.getBoundingClientRect(); if (r.top < 80 || r.bottom > innerHeight) window.scrollBy({ top: r.top - 90, behavior: "smooth" }); }
+          const jr = s.journal[0], evd = jr.evt ? evtDef(jr.evt) : null;
+          const evt = evd ? { id: jr.evt, ico: EVT_ICO[jr.evt] || "⚠️", t: evd.t, c: evd.choix[jr.choix] || evd.choix[0] } : null;
+          avant.live = animOn();
+          stopAnim = animerSemaine(vue, { s, p, w, avant, epreuve, evt, vitesse: store.get("vie:vitesse", 2), fini: () => { stopAnim = null; maj({ avant }); } });
         }
       };
     }
